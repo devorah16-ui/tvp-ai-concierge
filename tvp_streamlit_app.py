@@ -1,4 +1,5 @@
 import json
+import random
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -13,13 +14,13 @@ st.markdown("""
 .block-container {
     padding-top: 2rem;
     padding-bottom: 3rem;
-    max-width: 900px;
+    max-width: 980px;
 }
 .luxury-card {
     padding: 1.25rem 1.4rem;
     border: 1px solid rgba(49, 51, 63, 0.12);
     border-radius: 18px;
-    background: rgba(250, 248, 244, 0.65);
+    background: rgba(250, 248, 244, 0.70);
     margin-bottom: 1rem;
 }
 .section-label {
@@ -41,6 +42,10 @@ st.markdown("""
 .subtle-divider {
     margin-top: 0.8rem;
     margin-bottom: 1.2rem;
+}
+.small-note {
+    font-size: 0.95rem;
+    opacity: 0.82;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -87,6 +92,93 @@ OVERWHELM_PATTERNS = [
 MINI_PATTERNS = [
     "mini", "cheaper", "anything smaller", "something smaller"
 ]
+
+
+# -----------------------------
+# TESTING PANEL DATA
+# -----------------------------
+TEST_SCENARIOS = {
+    "Inquiry": [
+        "Hi! I just came across your page and wanted to get some info.",
+        "Can you tell me how your sessions work?",
+        "Do you have pricing you can send over?",
+        "I’m just looking right now but I love your work.",
+        "Where are you located and what do you offer?",
+        "I’ve never done something like this before—how does it work?",
+    ],
+    "Discovery": [
+        "I’ve always wanted to do something like this but never have.",
+        "I love your work—it feels so different than other photographers.",
+        "I’ve been thinking about doing portraits with my daughter.",
+        "This is beautiful… I just don’t know if I could pull it off.",
+        "I want something meaningful but I don’t know what that would look like.",
+        "I missed out on photos when my kids were little and I don’t want to regret it again.",
+    ],
+    "Vision Building": [
+        "I’m looking at a few photographers—what makes your sessions different?",
+        "Why is your work priced higher than others?",
+        "What exactly do you include in your sessions?",
+        "Do you help with styling or do I need to figure that out?",
+        "What kind of finished products do people usually get?",
+        "Are these all done in studio or on location?",
+    ],
+    "Price Objection": [
+        "Your work is beautiful but I’m worried it might be out of my budget.",
+        "This feels like it might be expensive…",
+        "What do most people spend?",
+        "Do you offer anything more affordable?",
+        "I love it but I don’t know if I can justify it.",
+    ],
+    "Spouse Objection": [
+        "I need to talk to my husband first.",
+        "My spouse would need to be on board.",
+        "I’m not sure my partner will understand the value.",
+        "Let me run this by my husband.",
+        "I love this so much but I would need to talk to my husband first before making a decision.",
+    ],
+    "Timing Objection": [
+        "Things are just really busy right now.",
+        "Maybe later this year.",
+        "I don’t think now is a good time.",
+        "We have a lot going on at the moment.",
+        "I’m really interested but things are just really busy for us right now.",
+    ],
+    "Overwhelm Objection": [
+        "This feels like a lot… outfits, kids, everything.",
+        "I wouldn’t even know where to start.",
+        "My kids don’t sit still—I’m nervous about that.",
+        "I’m not comfortable in front of the camera.",
+        "This looks beautiful but I’m honestly overwhelmed thinking about outfits, my kids behaving, and whether I could pull something like this off.",
+    ],
+    "Mini Session": [
+        "Do you offer minis?",
+        "Is there a smaller version of this?",
+        "Do you have anything quick and simple?",
+        "Do you offer mini sessions or anything a little more simple?",
+    ],
+    "Ready to Book": [
+        "I would love to book—what are the next steps?",
+        "How do I get booked?",
+        "Do you have availability in April?",
+        "I’m ready to move forward—what do I do next?",
+        "Can we get something scheduled?",
+        "I want to do this—what does booking look like?",
+        "My friend recently did a session with you and I love the print she has in her home. How do I get booked?",
+    ],
+    "Hybrid / Mixed": [
+        "I love your work and would love to do this, I just don’t know if it’s in my budget.",
+        "I’m really interested but I need to talk to my husband first.",
+        "This is beautiful but I’m honestly overwhelmed thinking about outfits and everything.",
+        "I want to do this but I don’t even know where to start.",
+        "Hi! I love your work. I’ve been thinking about doing something like this but I’m nervous and also need to talk to my husband lol. Just wanted to get some info.",
+    ],
+    "Social Proof / Trust": [
+        "My friend had photos done with you and I’m obsessed. How do I book?",
+        "I saw your work in someone’s home and I need this—how do we start?",
+        "You photographed my friend and I’ve been thinking about this ever since.",
+        "One of my friends did images with you and I love how they came out. I would love to book a session. How do I go about that?",
+    ],
+}
 
 
 # -----------------------------
@@ -280,6 +372,43 @@ def choose_strategy(lu_stage: str, emotional_driver: str, recommended_next_step:
     return "Create clarity and invite the conversation forward"
 
 
+def calculate_confidence(message: str, lu_stage: str, objections: list[str], emotional_state: str) -> str:
+    msg = message.lower()
+    signal_count = 0
+
+    if has_booking_intent(msg):
+        signal_count += 2
+    if objections:
+        signal_count += 1
+    if emotional_state in ["high interest", "nervous yet excited", "overwhelmed"]:
+        signal_count += 1
+    if "my friend" in msg or "recommended" in msg:
+        signal_count += 1
+    if lu_stage in ["ready_to_book", "objection", "vision_building"]:
+        signal_count += 1
+
+    if signal_count >= 4:
+        return "High"
+    if signal_count >= 2:
+        return "Medium"
+    return "Low"
+
+
+def detect_lead_priority(message: str, booking_likelihood: int, lu_stage: str) -> str:
+    msg = message.lower()
+
+    if booking_likelihood >= 8 and ("my friend" in msg or "recommended" in msg or lu_stage == "ready_to_book"):
+        return "High-touch lead"
+
+    if booking_likelihood >= 7:
+        return "Strong lead"
+
+    if lu_stage == "objection":
+        return "Nurture lead"
+
+    return "Early-stage lead"
+
+
 # -----------------------------
 # RESPONSE GENERATION
 # -----------------------------
@@ -397,6 +526,35 @@ def suggest_discovery_question(lu_stage: str, emotional_driver: str, objections:
     return "Can you tell me a little about who this is for and what you’re hoping to create?"
 
 
+def generate_follow_up(lu_stage: str, objections: list[str]) -> str:
+    if lu_stage == "ready_to_book":
+        return (
+            "Hi! I just wanted to follow up with you in case you’d like to move forward. "
+            "I’d be happy to walk you through the next step and help you find a date that feels right."
+        )
+
+    if "spouse" in objections:
+        return (
+            "Hi! I just wanted to check in and see if you had a chance to talk it through together. "
+            "If it would be helpful, I’m happy to walk you through the experience or answer any questions."
+        )
+
+    if "price" in objections:
+        return (
+            "Hi! I just wanted to check in. If it would be helpful, I’d be happy to walk you through how the experience works so you can get a clearer sense of what would feel right for you."
+        )
+
+    if "overwhelm" in objections:
+        return (
+            "Hi! I just wanted to check in. If it would help, I can walk you through everything step by step so it feels simple and easy."
+        )
+
+    return (
+        "Hi! I just wanted to check back in and see if you had any questions. "
+        "I’d be happy to walk you through the experience whenever you’re ready."
+    )
+
+
 def analyze_client_inquiry(message: str) -> dict:
     emotional_state = detect_emotional_state(message)
     objections = detect_objections(message)
@@ -407,6 +565,9 @@ def analyze_client_inquiry(message: str) -> dict:
     strategy = choose_strategy(lu_stage, emotional_driver, recommended_next_step)
     response_message = generate_response(message, emotional_state, objections, lu_stage, emotional_driver)
     discovery_question = suggest_discovery_question(lu_stage, emotional_driver, objections)
+    follow_up_message = generate_follow_up(lu_stage, objections)
+    confidence = calculate_confidence(message, lu_stage, objections, emotional_state)
+    lead_priority = detect_lead_priority(message, booking_likelihood, lu_stage)
 
     return {
         "booking_likelihood": booking_likelihood,
@@ -417,6 +578,9 @@ def analyze_client_inquiry(message: str) -> dict:
         "recommended_next_step": recommended_next_step,
         "strategy": strategy,
         "suggested_discovery_question": discovery_question,
+        "follow_up_message": follow_up_message,
+        "confidence": confidence,
+        "lead_priority": lead_priority,
         "response_message": response_message,
     }
 
@@ -429,6 +593,9 @@ if "input_text" not in st.session_state:
 
 if "analysis" not in st.session_state:
     st.session_state.analysis = None
+
+if "selected_test_category" not in st.session_state:
+    st.session_state.selected_test_category = "Inquiry"
 
 
 # -----------------------------
@@ -452,20 +619,42 @@ st.markdown(
 st.markdown('</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.subheader("Sample inquiries")
-    samples = {
-        "Ready to book": "One of my friends did images with you and I love how they came out. I would love to book a session. How do I go about that?",
-        "Get booked": "My friend recently did a session with you and I love the print she has in her home. How do I get booked?",
-        "Budget concern": "Your work is beautiful but I’m worried it might be out of my budget.",
-        "Spouse objection": "I love this so much but I would need to talk to my husband first before making a decision.",
-        "Overwhelmed mom": "This looks beautiful but I’m honestly overwhelmed just thinking about outfits, my kids behaving, and whether I could pull something like this off.",
-        "Comparison shopper": "I’m looking at a few photographers right now. What makes your sessions different?",
-        "Early curiosity": "Hi! I’m just looking right now but wanted to get some information about your sessions.",
+    st.subheader("Built-In Testing Panel")
+
+    category = st.selectbox(
+        "Scenario group",
+        list(TEST_SCENARIOS.keys()),
+        key="selected_test_category"
+    )
+
+    scenario_list = TEST_SCENARIOS[category]
+    picked_scenario = st.selectbox("Choose a sample", scenario_list)
+
+    sidebar_col1, sidebar_col2 = st.columns(2)
+    if sidebar_col1.button("Load selected", use_container_width=True):
+        st.session_state.input_text = picked_scenario
+        st.session_state.analysis = None
+        st.rerun()
+
+    if sidebar_col2.button("Randomize", use_container_width=True):
+        st.session_state.input_text = random.choice(TEST_SCENARIOS[category])
+        st.session_state.analysis = None
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("**Quick stage samples**")
+    quick_samples = {
+        "Ready to Book": "My friend recently did a session with you and I love the print she has in her home. How do I get booked?",
+        "Price": "Your work is beautiful but I’m worried it might be out of my budget.",
+        "Spouse": "I love this so much but I would need to talk to my husband first before making a decision.",
+        "Overwhelm": "This looks beautiful but I’m honestly overwhelmed thinking about outfits, my kids behaving, and whether I could pull something like this off.",
     }
 
-    selected = st.selectbox("Load a sample", ["Choose one..."] + list(samples.keys()))
-    if selected != "Choose one...":
-        st.session_state.input_text = samples[selected]
+    quick_pick = st.radio("Fast load", list(quick_samples.keys()), index=0)
+    if st.button("Load quick sample", use_container_width=True):
+        st.session_state.input_text = quick_samples[quick_pick]
+        st.session_state.analysis = None
+        st.rerun()
 
 st.markdown('<div class="section-label">Client Message</div>', unsafe_allow_html=True)
 client_message = st.text_area(
@@ -504,6 +693,10 @@ if st.session_state.analysis is not None:
     )
     metric4.metric("LU Stage", analysis["lu_stage"].replace("_", " ").title())
 
+    metric5, metric6 = st.columns(2)
+    metric5.metric("Confidence", analysis["confidence"])
+    metric6.metric("Lead Priority", analysis["lead_priority"])
+
     st.markdown('<div class="luxury-card">', unsafe_allow_html=True)
     st.markdown("**Emotional Driver**")
     st.write(analysis["emotional_driver"])
@@ -511,6 +704,8 @@ if st.session_state.analysis is not None:
     st.write(analysis["recommended_next_step"])
     st.markdown("**Suggested Discovery Question**")
     st.write(analysis["suggested_discovery_question"])
+    st.markdown("**Suggested Follow-Up**")
+    st.write(analysis["follow_up_message"])
     st.markdown('</div>', unsafe_allow_html=True)
 
     with st.expander("Concierge Notes"):
@@ -552,4 +747,4 @@ if st.session_state.analysis is not None:
         data=response_text,
         file_name="tvp_reply.txt",
         use_container_width=False,
-          )
+    )
