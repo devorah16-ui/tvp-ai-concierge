@@ -45,7 +45,7 @@ MINI_PATTERNS = [
 
 
 # -----------------------------
-# LOGIC FUNCTIONS
+# DETECTION FUNCTIONS
 # -----------------------------
 def detect_emotional_state(message):
     msg = message.lower()
@@ -92,7 +92,92 @@ def detect_objections(message):
     return objections
 
 
-def estimate_booking_likelihood(message, emotional_state, objections):
+def detect_lu_stage(message, objections):
+    msg = message.lower()
+
+    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+        return "ready_to_book"
+
+    if objections:
+        return "objection"
+
+    if "what makes" in msg or "difference" in msg:
+        return "vision_building"
+
+    if any(word in msg for word in ["just looking", "info", "how does this work", "can you send"]):
+        return "inquiry"
+
+    if any(word in msg for word in [
+        "i love your work",
+        "i've been following",
+        "always wanted",
+        "thinking about",
+        "interested"
+    ]):
+        return "discovery"
+
+    return "inquiry"
+
+
+def detect_emotional_driver(message, emotional_state, objections):
+    msg = message.lower()
+
+    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+        return "readiness and trust"
+
+    if "price" in objections:
+        return "clarity and reassurance"
+
+    if "spouse" in objections:
+        return "shared confidence"
+
+    if "overwhelm" in objections:
+        return "guidance and ease"
+
+    if "timing" in objections:
+        return "simplicity and flexibility"
+
+    if "mini_session" in objections:
+        return "fit and accessibility"
+
+    if "what makes" in msg or "difference" in msg:
+        return "confidence in your difference"
+
+    if emotional_state == "nervous yet excited":
+        return "confidence and care"
+
+    if emotional_state == "high interest":
+        return "beauty, trust, and momentum"
+
+    return "clarity and connection"
+
+
+def recommend_next_step(lu_stage, objections):
+    if lu_stage == "ready_to_book":
+        return "invite consultation and reserve date"
+
+    if "price" in objections:
+        return "explain the experience briefly and invite a consult"
+
+    if "spouse" in objections:
+        return "offer an overview they can share and keep the connection warm"
+
+    if "overwhelm" in objections:
+        return "simplify the process and guide with one calm next step"
+
+    if "timing" in objections:
+        return "offer future planning and remove urgency"
+
+    if lu_stage == "vision_building":
+        return "reinforce your difference and invite a conversation"
+
+    if lu_stage == "discovery":
+        return "ask one meaningful discovery question or invite a consult"
+
+    return "invite a simple conversation"
+
+
+def estimate_booking_likelihood(message, emotional_state, objections, lu_stage):
     score = 5
     msg = message.lower()
 
@@ -102,6 +187,9 @@ def estimate_booking_likelihood(message, emotional_state, objections):
     if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
         score += 3
 
+    if lu_stage == "ready_to_book":
+        score += 1
+
     if emotional_state in ["high interest", "nervous yet excited"]:
         score += 1
 
@@ -110,31 +198,29 @@ def estimate_booking_likelihood(message, emotional_state, objections):
     return max(1, min(10, score))
 
 
-def choose_strategy(emotional_state, objections, message):
+def choose_strategy(lu_stage, emotional_driver, recommended_next_step):
+    if lu_stage == "ready_to_book":
+        return "move confidently into booking guidance"
+
+    if lu_stage == "objection":
+        return f"address the concern with calm authority, support the client's need for {emotional_driver}, and {recommended_next_step}"
+
+    if lu_stage == "vision_building":
+        return "differentiate the experience and deepen desire"
+
+    if lu_stage == "discovery":
+        return "build connection and guide toward a meaningful next step"
+
+    return "create clarity and invite the conversation forward"
+
+
+# -----------------------------
+# RESPONSE GENERATION
+# -----------------------------
+def generate_response(message, emotional_state, objections, lu_stage, emotional_driver):
     msg = message.lower()
 
-    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
-        return "guide directly to booking"
-
-    if "price" in objections:
-        return "reassure value and guide"
-    if "spouse" in objections:
-        return "validate and keep warm"
-    if "overwhelm" in objections:
-        return "simplify and reassure"
-    if "timing" in objections:
-        return "reduce pressure and plan ahead"
-
-    if emotional_state == "high interest":
-        return "encourage and guide next steps"
-
-    return "guide and connect"
-
-
-def generate_response(message, emotional_state, objections):
-    msg = message.lower()
-
-    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+    if lu_stage == "ready_to_book":
         return (
             "That means so much—thank you. I’d love to create something beautiful for you.\n\n"
             "The next step is simply a conversation so I can learn more about what you’re envisioning, "
@@ -179,12 +265,19 @@ def generate_response(message, emotional_state, objections):
             "The next step would be for me to learn a little more about what you’re hoping for so I can guide you toward the option that feels like the best fit."
         )
 
-    if "what makes" in msg or "difference" in msg:
+    if lu_stage == "vision_building" or "what makes" in msg or "difference" in msg:
         return (
             "That’s a wonderful question—and honestly, it’s an important one.\n\n"
             "What I do is a little different from a typical photo session. I guide you through the entire experience—from styling and preparation to posing and final artwork—so you don’t have to figure anything out on your own.\n\n"
             "The goal isn’t simply to create beautiful photographs, but to create something lasting, intentional, and meaningful.\n\n"
             "The next step is simply a conversation so I can learn what you’re envisioning and walk you through how the experience would be shaped around you."
+        )
+
+    if lu_stage == "discovery":
+        return (
+            "I’m so glad you reached out. It sounds like this is something that matters to you, and I’d love to learn a little more about what you’re envisioning.\n\n"
+            "The experience is designed to be thoughtful and fully guided, so you do not need to have every detail figured out before reaching out.\n\n"
+            "The next step is simply a conversation so I can get a sense of what you’re hoping to create and begin guiding you toward what would fit best."
         )
 
     if emotional_state == "high interest":
@@ -210,18 +303,45 @@ def generate_response(message, emotional_state, objections):
     )
 
 
+def suggest_discovery_question(lu_stage, emotional_driver, objections):
+    if lu_stage == "discovery":
+        return "What is it about this season or this moment that makes you want to capture it now?"
+
+    if lu_stage == "vision_building":
+        return "What was it about my work that felt most meaningful or most like what you’re wanting?"
+
+    if "price" in objections:
+        return "Would it help if I walked you through how the experience works so you could get a clearer sense of what feels right for you?"
+
+    if "overwhelm" in objections:
+        return "Would it be helpful if I walked you through the process step by step so it feels simpler?"
+
+    if "spouse" in objections:
+        return "Would it help if I sent over a simple overview you could share so you both have a clear sense of how it works?"
+
+    return "Can you tell me a little about who this is for and what you’re hoping to create?"
+
+
 def analyze_client_inquiry(message):
     emotional_state = detect_emotional_state(message)
     objections = detect_objections(message)
-    booking_likelihood = estimate_booking_likelihood(message, emotional_state, objections)
-    strategy = choose_strategy(emotional_state, objections, message)
-    response_message = generate_response(message, emotional_state, objections)
+    lu_stage = detect_lu_stage(message, objections)
+    emotional_driver = detect_emotional_driver(message, emotional_state, objections)
+    recommended_next_step = recommend_next_step(lu_stage, objections)
+    booking_likelihood = estimate_booking_likelihood(message, emotional_state, objections, lu_stage)
+    strategy = choose_strategy(lu_stage, emotional_driver, recommended_next_step)
+    response_message = generate_response(message, emotional_state, objections, lu_stage, emotional_driver)
+    discovery_question = suggest_discovery_question(lu_stage, emotional_driver, objections)
 
     return {
         "booking_likelihood": booking_likelihood,
         "emotional_state": emotional_state,
         "objections_detected": objections,
+        "lu_stage": lu_stage,
+        "emotional_driver": emotional_driver,
+        "recommended_next_step": recommended_next_step,
         "strategy": strategy,
+        "suggested_discovery_question": discovery_question,
         "response_message": response_message,
     }
 
@@ -248,7 +368,7 @@ def clear_all():
 # UI
 # -----------------------------
 st.title("TVP AI Concierge")
-st.caption("Luxury client inquiry assistant")
+st.caption("Luxury client inquiry assistant with LU sales structure")
 
 with st.sidebar:
     st.subheader("Sample inquiries")
@@ -258,6 +378,7 @@ with st.sidebar:
         "Spouse objection": "I love this but I’d need to talk to my husband first before doing anything.",
         "Overwhelmed mom": "This looks beautiful but I’m honestly overwhelmed just thinking about outfits, my kids behaving, and whether I could pull something like this off.",
         "Comparison shopper": "I’m looking at a few photographers right now. What makes your sessions different?",
+        "Early curiosity": "Hi! I’m just looking right now but wanted to get some information about your sessions.",
     }
 
     selected = st.selectbox("Load a sample", ["Choose one..."] + list(samples.keys()))
@@ -295,15 +416,25 @@ if st.session_state.analysis is not None:
     analysis = st.session_state.analysis
 
     st.subheader("Analysis")
-    metric1, metric2, metric3 = st.columns(3)
+    metric1, metric2, metric3, metric4 = st.columns(4)
     metric1.metric("Booking Score", f"{analysis['booking_likelihood']}/10")
     metric2.metric("Emotion", analysis["emotional_state"])
     metric3.metric(
         "Objections",
         ", ".join(analysis["objections_detected"]) if analysis["objections_detected"] else "None"
     )
+    metric4.metric("LU Stage", analysis["lu_stage"])
 
-    with st.expander("View strategy"):
+    st.markdown("**Emotional driver**")
+    st.write(analysis["emotional_driver"])
+
+    st.markdown("**Recommended next step**")
+    st.write(analysis["recommended_next_step"])
+
+    st.markdown("**Suggested discovery question**")
+    st.write(analysis["suggested_discovery_question"])
+
+    with st.expander("View strategy and full analysis"):
         st.write(analysis["strategy"])
         st.code(json.dumps(analysis, indent=2, ensure_ascii=False), language="json")
 
