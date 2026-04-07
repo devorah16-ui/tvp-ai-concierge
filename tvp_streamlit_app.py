@@ -113,7 +113,6 @@ def generate_response(message, emotional_state, objections):
             "I’d love to learn what you’re envisioning and walk you through how everything works."
         )
 
-    # ALWAYS add conversion close
     response += "\n\nThe next step would just be a quick, relaxed conversation where I can walk you through everything and answer any questions—no pressure at all."
 
     return response
@@ -136,75 +135,96 @@ def analyze_client_inquiry(message):
 
 
 # -----------------------------
+# SESSION STATE
+# -----------------------------
+
+if "client_message" not in st.session_state:
+    st.session_state.client_message = ""
+
+if "analysis" not in st.session_state:
+    st.session_state.analysis = None
+
+
+# -----------------------------
 # UI
 # -----------------------------
 
 st.title("TVP AI Concierge")
 st.caption("Luxury client inquiry assistant")
 
-client_message = st.text_area("Paste client inquiry", height=150)
+client_message = st.text_area(
+    "Paste client inquiry",
+    key="client_message",
+    height=150
+)
 
 col1, col2 = st.columns(2)
-generate = col1.button("Generate response")
-clear = col2.button("Clear")
+generate = col1.button("Generate response", use_container_width=True)
+clear = col2.button("Clear", use_container_width=True)
+
+
+# -----------------------------
+# BUTTON ACTIONS
+# -----------------------------
 
 if clear:
+    st.session_state.client_message = ""
+    st.session_state.analysis = None
     st.rerun()
 
-
-# -----------------------------
-# MAIN LOGIC BLOCK
-# -----------------------------
-
 if generate:
-
-    if not client_message.strip():
+    if not st.session_state.client_message.strip():
         st.warning("Please enter a message")
     else:
-        analysis = analyze_client_inquiry(client_message)
+        st.session_state.analysis = analyze_client_inquiry(st.session_state.client_message)
 
-        # ANALYSIS DISPLAY
-        st.subheader("Analysis")
-        st.write(f"Booking Score: {analysis['booking_likelihood']}/10")
-        st.write(f"Emotion: {analysis['emotional_state']}")
-        st.write(f"Objections: {analysis['objections_detected']}")
 
-        # -----------------------------
-        # CLIENT RESPONSE (FIXED)
-        # -----------------------------
+# -----------------------------
+# DISPLAY RESULTS
+# -----------------------------
 
-        st.subheader("Client response")
+if st.session_state.analysis is not None:
+    analysis = st.session_state.analysis
 
-        response_text = analysis["response_message"]
+    st.subheader("Analysis")
+    st.write(f"Booking Score: {analysis['booking_likelihood']}/10")
+    st.write(f"Emotion: {analysis['emotional_state']}")
+    st.write(f"Objections: {analysis['objections_detected']}")
 
-        st.text_area(
-            "Response (editable)",
-            value=response_text,
-            height=260,
-        )
+    st.subheader("Client response")
 
-        # SAFE COPY BUTTON
-        safe_text = json.dumps(response_text)
+    response_text = analysis["response_message"]
 
-        copy_button_html = f"""
-        <button style="
-            background-color:#000;
-            color:#fff;
-            padding:10px 16px;
-            border:none;
-            border-radius:6px;
-            font-size:14px;
-        " onclick='navigator.clipboard.writeText({safe_text})'>
-            📋 Copy Response
-        </button>
-        """
+    st.text_area(
+        "Response (editable)",
+        value=response_text,
+        height=260,
+        key="response_output"
+    )
 
-        components.html(copy_button_html, height=60)
+    safe_text = json.dumps(response_text)
 
-        st.code(response_text, language="text")
+    copy_button_html = f"""
+    <button style="
+        background-color:#000;
+        color:#fff;
+        padding:10px 16px;
+        border:none;
+        border-radius:6px;
+        font-size:14px;
+        cursor:pointer;
+    " onclick='navigator.clipboard.writeText({safe_text})'>
+        📋 Copy Response
+    </button>
+    """
 
-        st.download_button(
-            "Download response",
-            data=response_text,
-            file_name="response.txt"
-        )
+    components.html(copy_button_html, height=60)
+
+    st.code(response_text, language="text")
+
+    st.download_button(
+        "Download response",
+        data=response_text,
+        file_name="response.txt",
+        use_container_width=True
+    )
