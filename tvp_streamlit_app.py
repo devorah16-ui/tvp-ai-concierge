@@ -6,6 +6,47 @@ st.set_page_config(page_title="TVP AI Concierge", page_icon="✨", layout="cente
 
 
 # -----------------------------
+# LIGHT STYLING
+# -----------------------------
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+    max-width: 900px;
+}
+.luxury-card {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid rgba(49, 51, 63, 0.12);
+    border-radius: 18px;
+    background: rgba(250, 248, 244, 0.65);
+    margin-bottom: 1rem;
+}
+.section-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 0.25rem;
+}
+.big-title {
+    font-size: 2.7rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+.soft-copy {
+    font-size: 1.05rem;
+    opacity: 0.82;
+}
+.subtle-divider {
+    margin-top: 0.8rem;
+    margin-bottom: 1.2rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# -----------------------------
 # PHRASE LIBRARIES
 # -----------------------------
 BOOKING_INTENT_PHRASES = [
@@ -154,27 +195,27 @@ def detect_emotional_driver(message, emotional_state, objections):
 
 def recommend_next_step(lu_stage, objections):
     if lu_stage == "ready_to_book":
-        return "invite consultation and reserve date"
+        return "Invite consultation and reserve date"
 
     if "price" in objections:
-        return "explain the experience briefly and invite a consult"
+        return "Briefly explain the experience and invite a consult"
 
     if "spouse" in objections:
-        return "offer an overview they can share and keep the connection warm"
+        return "Offer an overview they can share and keep the connection warm"
 
     if "overwhelm" in objections:
-        return "simplify the process and guide with one calm next step"
+        return "Simplify the process and guide with one calm next step"
 
     if "timing" in objections:
-        return "offer future planning and remove urgency"
+        return "Offer future planning and remove urgency"
 
     if lu_stage == "vision_building":
-        return "reinforce your difference and invite a conversation"
+        return "Reinforce your difference and invite a conversation"
 
     if lu_stage == "discovery":
-        return "ask one meaningful discovery question or invite a consult"
+        return "Ask one meaningful discovery question or invite a consult"
 
-    return "invite a simple conversation"
+    return "Invite a simple conversation"
 
 
 def estimate_booking_likelihood(message, emotional_state, objections, lu_stage):
@@ -200,23 +241,20 @@ def estimate_booking_likelihood(message, emotional_state, objections, lu_stage):
 
 def choose_strategy(lu_stage, emotional_driver, recommended_next_step):
     if lu_stage == "ready_to_book":
-        return "move confidently into booking guidance"
+        return "Move confidently into booking guidance"
 
     if lu_stage == "objection":
-        return f"address the concern with calm authority, support the client's need for {emotional_driver}, and {recommended_next_step}"
+        return f"Address the concern with calm authority, support the client's need for {emotional_driver}, and {recommended_next_step.lower()}"
 
     if lu_stage == "vision_building":
-        return "differentiate the experience and deepen desire"
+        return "Differentiate the experience and deepen desire"
 
     if lu_stage == "discovery":
-        return "build connection and guide toward a meaningful next step"
+        return "Build connection and guide toward a meaningful next step"
 
-    return "create clarity and invite the conversation forward"
+    return "Create clarity and invite the conversation forward"
 
 
-# -----------------------------
-# RESPONSE GENERATION
-# -----------------------------
 def generate_response(message, emotional_state, objections, lu_stage, emotional_driver):
     msg = message.lower()
 
@@ -367,8 +405,14 @@ def clear_all():
 # -----------------------------
 # UI
 # -----------------------------
-st.title("TVP AI Concierge")
-st.caption("Luxury client inquiry assistant with LU sales structure")
+st.markdown('<div class="luxury-card">', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Texas Vogue Internal Tool</div>', unsafe_allow_html=True)
+st.markdown('<div class="big-title">TVP AI Concierge</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="soft-copy">Luxury client inquiry assistant with LU sales structure</div>',
+    unsafe_allow_html=True
+)
+st.markdown('</div>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.subheader("Sample inquiries")
@@ -385,20 +429,19 @@ with st.sidebar:
     if selected != "Choose one...":
         st.session_state.input_text = samples[selected]
 
+st.markdown('<div class="section-label">Client Message</div>', unsafe_allow_html=True)
 client_message = st.text_area(
     "Paste client inquiry",
     value=st.session_state.input_text,
     height=150,
+    label_visibility="collapsed",
+    placeholder="Paste a DM or inquiry here..."
 )
 
 col1, col2 = st.columns(2)
-generate = col1.button("Generate response", use_container_width=True)
+generate = col1.button("Generate reply", use_container_width=True)
 col2.button("Clear", use_container_width=True, on_click=clear_all)
 
-
-# -----------------------------
-# BUTTON ACTIONS
-# -----------------------------
 if generate:
     st.session_state.input_text = client_message
 
@@ -408,14 +451,12 @@ if generate:
     else:
         st.session_state.analysis = analyze_client_inquiry(client_message)
 
-
-# -----------------------------
-# DISPLAY RESULTS
-# -----------------------------
 if st.session_state.analysis is not None:
     analysis = st.session_state.analysis
 
-    st.subheader("Analysis")
+    st.markdown('<div class="subtle-divider"></div>', unsafe_allow_html=True)
+    st.markdown("## Client Insight")
+
     metric1, metric2, metric3, metric4 = st.columns(4)
     metric1.metric("Booking Score", f"{analysis['booking_likelihood']}/10")
     metric2.metric("Emotion", analysis["emotional_state"])
@@ -423,55 +464,54 @@ if st.session_state.analysis is not None:
         "Objections",
         ", ".join(analysis["objections_detected"]) if analysis["objections_detected"] else "None"
     )
-    metric4.metric("LU Stage", analysis["lu_stage"])
+    metric4.metric("LU Stage", analysis["lu_stage"].replace("_", " ").title())
 
-    st.markdown("**Emotional driver**")
+    st.markdown('<div class="luxury-card">', unsafe_allow_html=True)
+    st.markdown("**Emotional Driver**")
     st.write(analysis["emotional_driver"])
-
-    st.markdown("**Recommended next step**")
+    st.markdown("**Recommended Next Step**")
     st.write(analysis["recommended_next_step"])
-
-    st.markdown("**Suggested discovery question**")
+    st.markdown("**Suggested Discovery Question**")
     st.write(analysis["suggested_discovery_question"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    with st.expander("View strategy and full analysis"):
+    with st.expander("Concierge Notes"):
         st.write(analysis["strategy"])
-        st.code(json.dumps(analysis, indent=2, ensure_ascii=False), language="json")
 
-    st.subheader("Client response")
+    st.markdown("## Suggested Reply")
 
     response_text = analysis["response_message"]
 
     st.text_area(
-        "Response (editable)",
+        "Suggested reply text",
         value=response_text,
         height=260,
         key="response_output",
+        label_visibility="collapsed",
     )
 
     safe_text = json.dumps(response_text)
 
     copy_button_html = f"""
     <button style="
-        background-color:#000;
-        color:#fff;
-        padding:10px 16px;
+        background-color:#111111;
+        color:#ffffff;
+        padding:12px 18px;
         border:none;
-        border-radius:6px;
-        font-size:14px;
+        border-radius:10px;
+        font-size:15px;
         cursor:pointer;
+        font-family:inherit;
     " onclick='navigator.clipboard.writeText({safe_text})'>
-        📋 Copy Response
+        Copy Reply
     </button>
     """
 
-    components.html(copy_button_html, height=60)
-
-    st.code(response_text, language="text")
+    components.html(copy_button_html, height=55)
 
     st.download_button(
-        "Download response",
+        "Download reply",
         data=response_text,
-        file_name="response.txt",
-        use_container_width=True,
+        file_name="tvp_reply.txt",
+        use_container_width=False,
     )
