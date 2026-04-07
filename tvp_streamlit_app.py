@@ -137,61 +137,77 @@ def generate_response(message, emotional_state, objections):
     if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
         return (
             "That means so much—thank you. I’d love to create something beautiful for you.\n\n"
-            "The next step is simply a quick conversation so I can learn what you’re envisioning, "
-            "walk you through the experience, and help you choose the best session for what you want.\n\n"
-            "From there, we’ll get your date reserved and start planning everything out in a really easy, guided way."
+            "The next step is simply a conversation so I can learn more about what you’re envisioning, "
+            "walk you through the experience, and help you choose the session that feels like the best fit.\n\n"
+            "From there, I’ll guide you through reserving your date and planning everything in a way that feels easy, thoughtful, and fully taken care of."
         )
 
     if "spouse" in objections:
-        response = (
+        return (
             "Of course—that makes complete sense. This is something meaningful, and I would want you both to feel really good about it.\n\n"
-            "What I can do is send over a simple overview so you can share it, and then we can reconnect once you’ve had a chance to talk.\n\n"
-            "And if it’s helpful, I’m always happy to answer any questions or even chat with both of you."
+            "What I can do is send over a simple overview so you can share it, and then we can reconnect once you’ve had a chance to talk it through together.\n\n"
+            "If it would be helpful, I’m also happy to answer any questions so everything feels clear and comfortable as you decide what feels right for you both."
         )
 
-    elif "price" in objections:
-        response = (
+    if "price" in objections:
+        return (
             "I completely understand—and I’m really glad you reached out. Most people feel that way at first because this is a little different than a typical photo session.\n\n"
-            "What I create is a guided portrait experience, and most clients choose the artwork and images that matter most to them after we’ve planned everything together.\n\n"
-            "Rather than trying to fit it into a quick message, I’ve found it’s much more helpful to walk you through it simply so you can see what feels right for you."
+            "What I create is a fully guided portrait experience, where everything is thoughtfully planned with you—from styling and wardrobe to how you’ll be photographed—so you don’t have to figure any of it out on your own.\n\n"
+            "Most clients don’t choose anything ahead of time. We design everything together in a way that feels natural and aligned with what you’re wanting.\n\n"
+            "The next step is simply a conversation so I can learn a little more about you and walk you through what this could look like for you. From there, I’ll guide you every step of the way."
         )
 
-    elif "overwhelm" in objections:
-        response = (
-            "I completely understand that feeling—and honestly, most of my clients start in that exact place.\n\n"
-            "You don’t have to have it all figured out ahead of time. I guide you through everything so it feels easy and natural.\n\n"
-            "My goal is for this to feel enjoyable, not stressful."
+    if "overwhelm" in objections:
+        return (
+            "I completely understand that feeling—and honestly, many of my clients begin in that exact place.\n\n"
+            "That’s why I guide you through each part of the experience, from what to wear to how everything comes together, so it feels calm, easy, and beautifully taken care of.\n\n"
+            "You do not need to have everything figured out ahead of time. My role is to help shape it with you in a way that feels natural and enjoyable.\n\n"
+            "The next step is simply a conversation so I can learn what you’re hoping for and begin guiding you through it."
         )
 
-    elif "timing" in objections:
-        response = (
-            "That makes complete sense—life gets busy quickly.\n\n"
-            "The nice thing is we can plan this in a really calm, easy way so it fits your schedule and doesn’t feel overwhelming.\n\n"
-            "Whenever the timing feels right, I’d be happy to walk you through the next step."
+    if "timing" in objections:
+        return (
+            "That makes complete sense—life can feel very full, especially in busy seasons.\n\n"
+            "The nice thing is that this can be planned in a really thoughtful way, so it feels intentional rather than rushed. Everything is designed to be guided and taken step by step.\n\n"
+            "When the timing feels right, I’d be happy to walk you through what the process would look like and help you choose a date that feels comfortable."
         )
 
-    elif "what makes" in msg or "difference" in msg:
-        response = (
-            "That’s a great question—and honestly, it’s an important one.\n\n"
-            "What I do is a little different from a typical photo session. I guide you through the entire experience—from styling to posing—so you don’t have to figure anything out on your own.\n\n"
-            "The goal isn’t just to take photos, but to create something timeless and meaningful."
+    if "mini_session" in objections:
+        return (
+            "I do offer a few limited sessions at certain times of year, though most of what I create is a more custom, fully guided portrait experience.\n\n"
+            "That is where we’re able to create the more refined, timeless artwork you see throughout my work.\n\n"
+            "The next step would be for me to learn a little more about what you’re hoping for so I can guide you toward the option that feels like the best fit."
         )
 
-    elif emotional_state == "high interest":
-        response = (
+    if "what makes" in msg or "difference" in msg:
+        return (
+            "That’s a wonderful question—and honestly, it’s an important one.\n\n"
+            "What I do is a little different from a typical photo session. I guide you through the entire experience—from styling and preparation to posing and final artwork—so you don’t have to figure anything out on your own.\n\n"
+            "The goal isn’t simply to create beautiful photographs, but to create something lasting, intentional, and meaningful.\n\n"
+            "The next step is simply a conversation so I can learn what you’re envisioning and walk you through how the experience would be shaped around you."
+        )
+
+    if emotional_state == "high interest":
+        return (
             "That means so much—thank you.\n\n"
-            "I’d love to learn more about what you’re envisioning and help you choose the session that fits best.\n\n"
-            "Everything is designed to feel easy, guided, and really intentional from start to finish."
+            "I’d love to learn more about what you’re envisioning and help you choose the session that would feel most aligned with what you want to create.\n\n"
+            "Everything is designed to feel easy, thoughtful, and fully guided from beginning to end.\n\n"
+            "The next step is simply a conversation so I can walk you through the experience and begin shaping it with you."
         )
 
-    else:
-        response = (
-            "I’m so glad you reached out. A lot of my clients begin exactly here—wanting to understand what the experience feels like before making any decisions.\n\n"
-            "I’d love to learn what you’re envisioning and walk you through how everything works."
+    if emotional_state == "nervous yet excited":
+        return (
+            "I completely understand that feeling—and honestly, that’s such a natural place to begin.\n\n"
+            "Most clients come in not knowing exactly how everything will come together yet, and that is completely okay. The experience is designed to be guided, thoughtful, and very personal.\n\n"
+            "My role is to help you feel comfortable, cared for, and confident as we plan something beautiful together.\n\n"
+            "The next step is simply a conversation so I can learn more about what you’re envisioning and begin guiding you through the process."
         )
 
-    response += "\n\nThe next step would just be a quick, relaxed conversation where I can walk you through everything and answer any questions—no pressure at all."
-    return response
+    return (
+        "I’m so glad you reached out. A lot of my clients begin exactly here—wanting to understand what the experience feels like before making any decisions.\n\n"
+        "I’d love to learn more about what you’re envisioning and walk you through how everything works, so you have a clear sense of what this could look like for you.\n\n"
+        "From there, I can guide you through the next steps in a way that feels thoughtful, easy, and fully tailored to what you’re wanting."
+    )
 
 
 def analyze_client_inquiry(message):
