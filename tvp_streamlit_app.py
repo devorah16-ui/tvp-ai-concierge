@@ -6,10 +6,52 @@ st.set_page_config(page_title="TVP AI Concierge", page_icon="✨", layout="cente
 
 
 # -----------------------------
+# PHRASE LIBRARIES
+# -----------------------------
+BOOKING_INTENT_PHRASES = [
+    "love to book",
+    "want to book",
+    "ready to book",
+    "how do i book",
+    "how do i go about that",
+    "what are the next steps",
+    "how can i book",
+    "book a session",
+    "schedule a session",
+    "reserve a session",
+    "how do i get started",
+]
+
+PRICE_PATTERNS = [
+    "cost", "price", "pricing", "budget", "afford", "worth it", "expensive", "how much"
+]
+
+SPOUSE_PATTERNS = [
+    "husband", "spouse", "partner", "talk to my husband", "talk to my wife", "need to ask"
+]
+
+TIMING_PATTERNS = [
+    "busy", "timing", "later", "not right now", "crazy right now", "schedule is full"
+]
+
+OVERWHELM_PATTERNS = [
+    "overwhelmed", "nervous", "stress", "stressed", "don’t know what to expect",
+    "don't know what to expect", "not sure what to do"
+]
+
+MINI_PATTERNS = [
+    "mini", "cheaper", "anything smaller", "something smaller"
+]
+
+
+# -----------------------------
 # LOGIC FUNCTIONS
 # -----------------------------
 def detect_emotional_state(message):
     msg = message.lower()
+
+    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+        return "high interest"
 
     if any(word in msg for word in ["nervous", "scared", "unsure", "afraid", "worried"]):
         if any(word in msg for word in ["excited", "love", "dream", "always wanted"]):
@@ -32,19 +74,19 @@ def detect_objections(message):
     msg = message.lower()
     objections = []
 
-    if any(p in msg for p in ["cost", "price", "budget", "afford", "worth it"]):
+    if any(p in msg for p in PRICE_PATTERNS):
         objections.append("price")
 
-    if any(p in msg for p in ["husband", "spouse", "partner"]):
+    if any(p in msg for p in SPOUSE_PATTERNS):
         objections.append("spouse")
 
-    if any(p in msg for p in ["busy", "timing", "later"]):
+    if any(p in msg for p in TIMING_PATTERNS):
         objections.append("timing")
 
-    if any(p in msg for p in ["overwhelmed", "nervous", "stress"]):
+    if any(p in msg for p in OVERWHELM_PATTERNS):
         objections.append("overwhelm")
 
-    if any(p in msg for p in ["mini", "cheaper"]):
+    if any(p in msg for p in MINI_PATTERNS):
         objections.append("mini_session")
 
     return objections
@@ -57,6 +99,9 @@ def estimate_booking_likelihood(message, emotional_state, objections):
     if "love your work" in msg:
         score += 2
 
+    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+        score += 3
+
     if emotional_state in ["high interest", "nervous yet excited"]:
         score += 1
 
@@ -65,18 +110,37 @@ def estimate_booking_likelihood(message, emotional_state, objections):
     return max(1, min(10, score))
 
 
-def choose_strategy(emotional_state, objections):
+def choose_strategy(emotional_state, objections, message):
+    msg = message.lower()
+
+    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+        return "guide directly to booking"
+
     if "price" in objections:
         return "reassure value and guide"
     if "spouse" in objections:
         return "validate and keep warm"
     if "overwhelm" in objections:
         return "simplify and reassure"
+    if "timing" in objections:
+        return "reduce pressure and plan ahead"
+
+    if emotional_state == "high interest":
+        return "encourage and guide next steps"
+
     return "guide and connect"
 
 
 def generate_response(message, emotional_state, objections):
     msg = message.lower()
+
+    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+        return (
+            "That means so much—thank you. I’d love to create something beautiful for you.\n\n"
+            "The next step is simply a quick conversation so I can learn what you’re envisioning, "
+            "walk you through the experience, and help you choose the best session for what you want.\n\n"
+            "From there, we’ll get your date reserved and start planning everything out in a really easy, guided way."
+        )
 
     if "spouse" in objections:
         response = (
@@ -99,11 +163,25 @@ def generate_response(message, emotional_state, objections):
             "My goal is for this to feel enjoyable, not stressful."
         )
 
-    elif "what makes" in msg:
+    elif "timing" in objections:
+        response = (
+            "That makes complete sense—life gets busy quickly.\n\n"
+            "The nice thing is we can plan this in a really calm, easy way so it fits your schedule and doesn’t feel overwhelming.\n\n"
+            "Whenever the timing feels right, I’d be happy to walk you through the next step."
+        )
+
+    elif "what makes" in msg or "difference" in msg:
         response = (
             "That’s a great question—and honestly, it’s an important one.\n\n"
             "What I do is a little different from a typical photo session. I guide you through the entire experience—from styling to posing—so you don’t have to figure anything out on your own.\n\n"
             "The goal isn’t just to take photos, but to create something timeless and meaningful."
+        )
+
+    elif emotional_state == "high interest":
+        response = (
+            "That means so much—thank you.\n\n"
+            "I’d love to learn more about what you’re envisioning and help you choose the session that fits best.\n\n"
+            "Everything is designed to feel easy, guided, and really intentional from start to finish."
         )
 
     else:
@@ -113,7 +191,6 @@ def generate_response(message, emotional_state, objections):
         )
 
     response += "\n\nThe next step would just be a quick, relaxed conversation where I can walk you through everything and answer any questions—no pressure at all."
-
     return response
 
 
@@ -121,7 +198,7 @@ def analyze_client_inquiry(message):
     emotional_state = detect_emotional_state(message)
     objections = detect_objections(message)
     booking_likelihood = estimate_booking_likelihood(message, emotional_state, objections)
-    strategy = choose_strategy(emotional_state, objections)
+    strategy = choose_strategy(emotional_state, objections, message)
     response_message = generate_response(message, emotional_state, objections)
 
     return {
@@ -157,6 +234,20 @@ def clear_all():
 st.title("TVP AI Concierge")
 st.caption("Luxury client inquiry assistant")
 
+with st.sidebar:
+    st.subheader("Sample inquiries")
+    samples = {
+        "Ready to book": "One of my friends did images with you and I love how they came out. I would love to book a session. How do I go about that?",
+        "Budget concern": "Your work is beautiful but I’m worried it might be out of my budget.",
+        "Spouse objection": "I love this but I’d need to talk to my husband first before doing anything.",
+        "Overwhelmed mom": "This looks beautiful but I’m honestly overwhelmed just thinking about outfits, my kids behaving, and whether I could pull something like this off.",
+        "Comparison shopper": "I’m looking at a few photographers right now. What makes your sessions different?",
+    }
+
+    selected = st.selectbox("Load a sample", ["Choose one..."] + list(samples.keys()))
+    if selected != "Choose one...":
+        st.session_state.input_text = samples[selected]
+
 client_message = st.text_area(
     "Paste client inquiry",
     value=st.session_state.input_text,
@@ -188,9 +279,17 @@ if st.session_state.analysis is not None:
     analysis = st.session_state.analysis
 
     st.subheader("Analysis")
-    st.write(f"Booking Score: {analysis['booking_likelihood']}/10")
-    st.write(f"Emotion: {analysis['emotional_state']}")
-    st.write(f"Objections: {analysis['objections_detected']}")
+    metric1, metric2, metric3 = st.columns(3)
+    metric1.metric("Booking Score", f"{analysis['booking_likelihood']}/10")
+    metric2.metric("Emotion", analysis["emotional_state"])
+    metric3.metric(
+        "Objections",
+        ", ".join(analysis["objections_detected"]) if analysis["objections_detected"] else "None"
+    )
+
+    with st.expander("View strategy"):
+        st.write(analysis["strategy"])
+        st.code(json.dumps(analysis, indent=2, ensure_ascii=False), language="json")
 
     st.subheader("Client response")
 
