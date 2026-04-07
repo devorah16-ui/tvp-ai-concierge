@@ -228,20 +228,46 @@ if generate:
             st.write(analysis["strategy"])
             st.code(json.dumps(analysis, indent=2, ensure_ascii=False), language="json")
 
-        st.subheader("Client response")
-        st.text_area(
-            "Copy and paste this into your message",
-            value=analysis["response_message"],
-            height=260,
-        )
-        st.code(analysis["response_message"], language="text")
-        st.download_button(
-            "Download response as .txt",
-            data=analysis["response_message"],
-            file_name="tvp_client_response.txt",
-            mime="text/plain",
-            use_container_width=True,
-        )
+        import streamlit.components.v1 as components
+import json
+
+st.subheader("Client response")
+
+response_text = analysis["response_message"]
+
+st.text_area(
+    "Response (editable)",
+    value=response_text,
+    height=260,
+)
+
+# Safe copy (handles quotes properly)
+safe_text = json.dumps(response_text)
+
+copy_button_html = f"""
+<button style="
+    background-color:#000;
+    color:#fff;
+    padding:10px 16px;
+    border:none;
+    border-radius:6px;
+    font-size:14px;
+" onclick='navigator.clipboard.writeText({safe_text})'>
+    📋 Copy Response
+</button>
+"""
+
+components.html(copy_button_html, height=60)
+
+st.code(response_text, language="text")
+
+st.download_button(
+    "Download response as .txt",
+    data=response_text,
+    file_name="tvp_client_response.txt",
+    mime="text/plain",
+    use_container_width=True,
+)
 
 st.markdown("---")
 st.markdown("**Next useful upgrades:** Atelier vs Heirloom mode, follow-up message generation, and saved response history.")
