@@ -1,578 +1,761 @@
-import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, Sparkles, Phone, MessageSquare, Brain, ChevronRight, RefreshCcw } from "lucide-react";
+import json
+import random
+import streamlit as st
+import streamlit.components.v1 as components
 
-const responseLibrary = {
-  discovery: {
-    label: "Discovery",
-    objective: "Open the client up and learn what matters emotionally.",
-    triggers: {
-      just_looking: {
-        label: "Just looking / not sure what I want",
-        clientCue: "I'm just looking. I'm not totally sure what I want yet.",
-        response:
-          "Absolutely—and honestly, that’s the perfect place to start. Most of my clients don’t come in with a clear plan… they just know they want something meaningful. That’s really where I step in—helping you shape what this could look like in a way that feels natural and personal to you. Can I ask—what made you start thinking about doing this now?",
-      },
-      overwhelmed: {
-        label: "Overwhelmed",
-        clientCue: "I feel a little overwhelmed trying to figure it all out.",
-        response:
-          "That makes complete sense—and you’re not alone in that. This is actually why I’ve structured the experience the way I have… so you’re not trying to piece it all together on your own. I guide you through everything—from styling to how it all comes together—so it feels calm and fully taken care of. What part feels the most overwhelming right now?",
-      },
-      meaningful: {
-        label: "Wants something meaningful",
-        clientCue: "I want this to feel meaningful, not just like another photo session.",
-        response:
-          "I love that you said that—because that’s exactly the heart of what I do. This isn’t about just taking photos… it’s about creating something that reflects this moment in your life in a way that lasts. When you picture this a year from now… what would you want it to feel like when you see it?",
-      },
-    },
-  },
-  desire: {
-    label: "Emotional Desire",
-    objective: "Deepen emotional motivation and future vision.",
-    triggers: {
-      child_growing: {
-        label: "Child is growing fast",
-        clientCue: "She’s growing so fast and I don’t want to miss this stage.",
-        response:
-          "That stage goes by so quickly… and it’s one of the biggest reasons clients come to me. They’re not just trying to capture how things look—they’re trying to hold onto how it feels right now. That’s really what we design together.",
-      },
-      mother_daughter: {
-        label: "Mother-daughter connection",
-        clientCue: "I really want something special of the two of us.",
-        response:
-          "There’s something so meaningful about preserving that connection while you’re in it—not years after it’s changed. My goal is to create something that lets you feel this season again every time you see it.",
-      },
-    },
-  },
-  trust: {
-    label: "Trust / Safety",
-    objective: "Reduce fear and increase emotional safety.",
-    triggers: {
-      what_to_wear: {
-        label: "Doesn’t know what to wear / how it works",
-        clientCue: "I wouldn’t even know what to wear or how any of this works.",
-        response:
-          "That’s completely taken care of. You’re guided through everything—from wardrobe to posing—so you’re never left guessing. My role is to make sure you feel comfortable, confident, and fully supported the entire time.",
-      },
-      nervous_look: {
-        label: "Nervous about how she will look",
-        clientCue: "I’m nervous I won’t look good in pictures.",
-        response:
-          "I hear that a lot—and it’s a very real concern. The way I photograph and guide you is very intentional… so you’re not just standing there hoping for a good image. I’m shaping everything—light, pose, expression—to bring out the most natural and flattering version of you.",
-      },
-    },
-  },
-  objection: {
-    label: "Objection",
-    objective: "Interrupt the old pattern, differentiate, and solve the real fear.",
-    triggers: {
-      past_experience: {
-        label: "Past bad experience / photos sat on phone",
-        clientCue: "I’ve done photos before and then they just sat on my phone.",
-        response:
-          "I’m really glad you shared that—because that’s exactly what I’ve built this experience to avoid. Most photography sessions end with a gallery… and then you’re left trying to figure out what to do with it. What I do is very different. We design your artwork from the beginning—so before you even step into the session, we already know what this is going to become. So you’re not walking away with files… you’re walking away with something finished, meaningful, and part of your home. If it helps, I can show you what that would look like for you specifically.",
-      },
-      price: {
-        label: "Price hesitation",
-        clientCue: "I just don’t know if I can justify the investment.",
-        response:
-          "I completely understand—and honestly, most clients feel that way at first. This is an investment, and it should feel intentional. What I’ve found is that once they understand what they’re actually receiving—not just images, but finished artwork—they feel very differently about it. This isn’t something that ends up in a folder… it becomes part of your daily life.",
-      },
-      spouse: {
-        label: "Needs to talk to spouse",
-        clientCue: "I need to talk to my husband first.",
-        response:
-          "Of course—that’s such an important part of the decision. What I can do is send you a simple overview that makes it easy to share, and I’m always happy to answer any questions he might have as well. And if it helps, I can hold a date for you while you talk it over—no pressure at all.",
-      },
-      not_ready: {
-        label: "Not ready",
-        clientCue: "I’m not ready yet.",
-        response:
-          "That’s completely okay. Usually when someone feels that way, it’s not about timing—it’s about not feeling fully clear yet. Would it help if I showed you what this could look like for you specifically so you can decide from a place of clarity?",
-      },
-      time: {
-        label: "Timing concern",
-        clientCue: "We’re just so busy right now.",
-        response:
-          "I completely understand. That’s exactly why I guide the process so closely—it keeps this from becoming one more thing on your plate. If timing is the biggest concern, we can look at a date that gives you breathing room while still preserving this season before it passes.",
-      },
-    },
-  },
-  buying: {
-    label: "Buying Signal",
-    objective: "Confidently guide them to the next step.",
-    triggers: {
-      sounds_nice: {
-        label: "This sounds really nice",
-        clientCue: "This actually sounds really nice.",
-        response:
-          "I’m so glad it resonates with you. The next step would be a quick design conversation so we can start shaping this around you and your daughter. I do have a couple of beautiful dates available—would you like me to hold one while we plan?",
-      },
-      next_steps: {
-        label: "What are the next steps?",
-        clientCue: "What are the next steps from here?",
-        response:
-          "Perfect—that’s exactly where we want to be. We’ll start with a short consultation where I guide you through everything and begin designing your session. From there, we choose your date and start bringing it to life.",
-      },
-    },
-  },
-  disengagement: {
-    label: "Disengagement Recovery",
-    objective: "Recover clarity or exit gracefully without pressure.",
-    triggers: {
-      think_about_it: {
-        label: "Needs to think about it",
-        clientCue: "I think I need to think about it.",
-        response:
-          "That makes sense—and I want you to feel completely confident in whatever you decide. Usually when someone feels unsure, it’s because they’re missing a clear picture of what this would actually become. Would it help if I showed you a few examples of how this looks for other clients so you can really see the difference?",
-      },
-      pass: {
-        label: "Going to pass",
-        clientCue: "I think I’m going to pass for now.",
-        response:
-          "I completely understand—and I really appreciate you sharing that with me. If anything changes or you find yourself wanting something more intentional in the future, I’m always here to guide you through it.",
-      },
-    },
-  },
-};
+st.set_page_config(page_title="TVP AI Concierge", page_icon="✨", layout="centered")
 
-const stageOrder = Object.keys(responseLibrary);
+# -----------------------------
+# LIGHT STYLING
+# -----------------------------
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+    max-width: 980px;
+}
+.luxury-card {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid rgba(49, 51, 63, 0.12);
+    border-radius: 18px;
+    background: rgba(250, 248, 244, 0.70);
+    margin-bottom: 1rem;
+}
+.section-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 0.25rem;
+}
+.big-title {
+    font-size: 2.7rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+.soft-copy {
+    font-size: 1.05rem;
+    opacity: 0.82;
+}
+.subtle-divider {
+    margin-top: 0.8rem;
+    margin-bottom: 1.2rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
-const callCoach = {
-  discovery:
-    "Slow down. Ask one emotionally open question. Do not explain too much yet.",
-  desire:
-    "Reflect what matters and expand the emotional why. Keep the client talking.",
-  trust:
-    "Normalize fear. Position yourself as the calm guide.",
-  objection:
-    "Do not repeat discovery language. Interrupt the pattern, explain what is different, and lead.",
-  buying:
-    "Be direct. Guide to date, consult, or reservation.",
-  disengagement:
-    "Restore clarity or release with grace. Never chase.",
-};
+# -----------------------------
+# SESSION STATE
+# -----------------------------
+defaults = {
+    "input_text": "",
+    "analysis": None,
+    "mode": "Inquiry Reply",
+    "selected_test_category": "Inquiry",
+    "selected_sample": "",
+}
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
-const scenarioCases = [
-  {
-    name: "Mother-Daughter, Past Bad Experience",
-    stage: "objection",
-    trigger: "past_experience",
-    clientMessage:
-      "I’ve done family photos before and honestly they just sat on my phone. I don’t want to spend money and end up in the same place again.",
-  },
-  {
-    name: "Interested but Overwhelmed",
-    stage: "discovery",
-    trigger: "overwhelmed",
-    clientMessage:
-      "I love your work, I’m just overwhelmed and not really sure where to start.",
-  },
-  {
-    name: "Warm Lead Ready for Next Step",
-    stage: "buying",
-    trigger: "next_steps",
-    clientMessage:
-      "This sounds beautiful. What would the next step be?",
-  },
-  {
-    name: "Spouse Barrier",
-    stage: "objection",
-    trigger: "spouse",
-    clientMessage:
-      "I really like this, but I need to talk to my husband before I commit to anything.",
-  },
-];
+# -----------------------------
+# PHRASE LIBRARIES
+# -----------------------------
+BOOKING_INTENT_PHRASES = [
+    "love to book",
+    "want to book",
+    "ready to book",
+    "how do i book",
+    "how do i get booked",
+    "how do i go about that",
+    "what are the next steps",
+    "how can i book",
+    "book a session",
+    "schedule a session",
+    "reserve a session",
+    "how do i get started",
+    "get booked",
+    "get this booked",
+    "book with you",
+]
 
-function getResponse(stage, trigger) {
-  return responseLibrary?.[stage]?.triggers?.[trigger]?.response || "";
+PRICE_PATTERNS = [
+    "cost", "price", "pricing", "budget", "afford", "worth it", "expensive", "how much"
+]
+
+SPOUSE_PATTERNS = [
+    "husband", "spouse", "partner", "talk to my husband", "talk to my wife", "need to ask"
+]
+
+TIMING_PATTERNS = [
+    "busy", "timing", "later", "not right now", "crazy right now", "schedule is full"
+]
+
+OVERWHELM_PATTERNS = [
+    "overwhelmed", "nervous", "stress", "stressed", "don’t know what to expect",
+    "don't know what to expect", "not sure what to do"
+]
+
+MINI_PATTERNS = [
+    "mini", "cheaper", "anything smaller", "something smaller"
+]
+
+TEST_SCENARIOS = {
+    "Inquiry": [
+        "Hi! I just came across your page and wanted to get some info.",
+        "Can you tell me how your sessions work?",
+        "Do you have pricing you can send over?",
+        "I’m just looking right now but I love your work.",
+        "Where are you located and what do you offer?",
+        "I’ve never done something like this before—how does it work?",
+    ],
+    "Discovery": [
+        "I’ve always wanted to do something like this but never have.",
+        "I love your work—it feels so different than other photographers.",
+        "I’ve been thinking about doing portraits with my daughter.",
+        "This is beautiful… I just don’t know if I could pull it off.",
+        "I want something meaningful but I don’t know what that would look like.",
+        "I missed out on photos when my kids were little and I don’t want to regret it again.",
+    ],
+    "Vision Building": [
+        "I’m looking at a few photographers—what makes your sessions different?",
+        "Why is your work priced higher than others?",
+        "What exactly do you include in your sessions?",
+        "Do you help with styling or do I need to figure that out?",
+        "What kind of finished products do people usually get?",
+        "Are these all done in studio or on location?",
+    ],
+    "Price Objection": [
+        "Your work is beautiful but I’m worried it might be out of my budget.",
+        "This feels like it might be expensive…",
+        "What do most people spend?",
+        "Do you offer anything more affordable?",
+        "I love it but I don’t know if I can justify it.",
+    ],
+    "Spouse Objection": [
+        "I need to talk to my husband first.",
+        "My spouse would need to be on board.",
+        "I’m not sure my partner will understand the value.",
+        "Let me run this by my husband.",
+        "I appreciate all the information and it sounds great but I need to talk to my husband.",
+        "I love this so much but I would need to talk to my husband first before making a decision.",
+    ],
+    "Timing Objection": [
+        "Things are just really busy right now.",
+        "Maybe later this year.",
+        "I don’t think now is a good time.",
+        "We have a lot going on at the moment.",
+        "I’m really interested but things are just really busy for us right now.",
+    ],
+    "Overwhelm Objection": [
+        "This feels like a lot… outfits, kids, everything.",
+        "I wouldn’t even know where to start.",
+        "My kids don’t sit still—I’m nervous about that.",
+        "I’m not comfortable in front of the camera.",
+        "This looks beautiful but I’m honestly overwhelmed thinking about outfits, my kids behaving, and whether I could pull something like this off.",
+    ],
+    "Mini Session": [
+        "Do you offer minis?",
+        "Is there a smaller version of this?",
+        "Do you have anything quick and simple?",
+        "Do you offer mini sessions or anything a little more simple?",
+    ],
+    "Ready to Book": [
+        "I would love to book—what are the next steps?",
+        "How do I get booked?",
+        "Do you have availability in April?",
+        "I’m ready to move forward—what do I do next?",
+        "Can we get something scheduled?",
+        "I want to do this—what does booking look like?",
+        "My friend recently did a session with you and I love the print she has in her home. How do I get booked?",
+    ],
+    "Hybrid / Mixed": [
+        "I love your work and would love to do this, I just don’t know if it’s in my budget.",
+        "I’m really interested but I need to talk to my husband first.",
+        "This is beautiful but I’m honestly overwhelmed thinking about outfits and everything.",
+        "I want to do this but I don’t even know where to start.",
+        "Hi! I love your work. I’ve been thinking about doing something like this but I’m nervous and also need to talk to my husband lol. Just wanted to get some info.",
+    ],
+    "Social Proof / Trust": [
+        "My friend had photos done with you and I’m obsessed. How do I book?",
+        "I saw your work in someone’s home and I need this—how do we start?",
+        "You photographed my friend and I’ve been thinking about this ever since.",
+        "One of my friends did images with you and I love how they came out. I would love to book a session. How do I go about that?",
+    ],
 }
 
-function getTriggersForStage(stage) {
-  return Object.entries(responseLibrary[stage]?.triggers || {}).map(([key, value]) => ({
-    key,
-    ...value,
-  }));
-}
+# -----------------------------
+# ACTIONS
+# -----------------------------
+def clear_all():
+    st.session_state.input_text = ""
+    st.session_state.analysis = None
 
-export default function TexasVogueLuApp() {
-  const [stage, setStage] = useState("discovery");
-  const [trigger, setTrigger] = useState("just_looking");
-  const [clientInput, setClientInput] = useState(responseLibrary.discovery.triggers.just_looking.clientCue);
-  const [generatedResponse, setGeneratedResponse] = useState(getResponse("discovery", "just_looking"));
-  const [copied, setCopied] = useState(false);
-  const [mode, setMode] = useState("text");
-  const [selectedScenario, setSelectedScenario] = useState("Mother-Daughter, Past Bad Experience");
-  const [conversationLog, setConversationLog] = useState([
-    {
-      speaker: "client",
-      text: "Hi, I’ve been looking at your work and I’m interested in doing something with my daughter, but I’m honestly not totally sure what I’d want yet.",
-    },
-    {
-      speaker: "assistant",
-      text: "Absolutely—and honestly, that’s the perfect place to start. Most of my clients don’t come in with a clear plan… they just know they want something meaningful.",
-    },
-  ]);
+def load_selected_sample():
+    sample = st.session_state.selected_sample
+    if sample:
+        st.session_state.input_text = sample
+        st.session_state.analysis = None
 
-  const triggerOptions = useMemo(() => getTriggersForStage(stage), [stage]);
+def load_random_sample():
+    category = st.session_state.selected_test_category
+    st.session_state.input_text = random.choice(TEST_SCENARIOS[category])
+    st.session_state.analysis = None
 
-  const selectedStageMeta = responseLibrary[stage];
-  const selectedTriggerMeta = responseLibrary[stage].triggers[trigger];
+# -----------------------------
+# HELPERS
+# -----------------------------
+def has_booking_intent(msg: str) -> bool:
+    booking_words = ["book", "booked", "booking", "reserve", "schedule"]
+    intent_words = ["how do i", "how can i", "want to", "ready to", "love to", "next steps", "get started"]
+    return (
+        any(phrase in msg for phrase in BOOKING_INTENT_PHRASES)
+        or (any(b in msg for b in booking_words) and any(i in msg for i in intent_words))
+    )
 
-  const applySelection = (nextStage, nextTrigger) => {
-    const cue = responseLibrary[nextStage].triggers[nextTrigger].clientCue;
-    const response = responseLibrary[nextStage].triggers[nextTrigger].response;
-    setStage(nextStage);
-    setTrigger(nextTrigger);
-    setClientInput(cue);
-    setGeneratedResponse(response);
-  };
+def detect_emotional_state(message: str) -> str:
+    msg = message.lower()
 
-  const handleStageChange = (value) => {
-    const firstTrigger = Object.keys(responseLibrary[value].triggers)[0];
-    applySelection(value, firstTrigger);
-  };
+    if has_booking_intent(msg):
+        return "high interest"
 
-  const handleTriggerChange = (value) => {
-    applySelection(stage, value);
-  };
+    if any(word in msg for word in ["nervous", "scared", "unsure", "afraid", "worried"]):
+        if any(word in msg for word in ["excited", "love", "dream", "always wanted"]):
+            return "nervous yet excited"
+        return "uncertain or hesitant"
 
-  const handleGenerate = () => {
-    const response = getResponse(stage, trigger);
-    setGeneratedResponse(response);
-  };
+    if any(word in msg for word in ["overwhelmed", "busy", "stressed"]):
+        return "overwhelmed"
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedResponse);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
+    if any(word in msg for word in ["love your work", "beautiful", "amazing", "obsessed", "love the print", "love how they came out"]):
+        return "high interest"
+
+    if any(word in msg for word in ["just looking", "info", "curious"]):
+        return "interested but cautious"
+
+    return "curious but undecided"
+
+def detect_objections(message: str) -> list[str]:
+    msg = message.lower()
+    objections = []
+
+    if any(p in msg for p in PRICE_PATTERNS):
+        objections.append("price")
+    if any(p in msg for p in SPOUSE_PATTERNS):
+        objections.append("spouse")
+    if any(p in msg for p in TIMING_PATTERNS):
+        objections.append("timing")
+    if any(p in msg for p in OVERWHELM_PATTERNS):
+        objections.append("overwhelm")
+    if any(p in msg for p in MINI_PATTERNS):
+        objections.append("mini_session")
+
+    return objections
+
+def detect_lu_stage(message: str, objections: list[str]) -> str:
+    msg = message.lower()
+
+    if has_booking_intent(msg):
+        return "ready_to_book"
+    if objections:
+        return "objection"
+    if "what makes" in msg or "difference" in msg:
+        return "vision_building"
+    if any(word in msg for word in ["just looking", "info", "how does this work", "can you send"]):
+        return "inquiry"
+    if any(word in msg for word in [
+        "i love your work", "i've been following", "always wanted", "thinking about",
+        "interested", "love the print", "love how they came out"
+    ]):
+        return "discovery"
+
+    return "inquiry"
+
+def detect_emotional_driver(message: str, emotional_state: str, objections: list[str]) -> str:
+    msg = message.lower()
+
+    if has_booking_intent(msg):
+        return "readiness and trust"
+    if "price" in objections:
+        return "clarity and reassurance"
+    if "spouse" in objections:
+        return "shared confidence"
+    if "overwhelm" in objections:
+        return "guidance and ease"
+    if "timing" in objections:
+        return "simplicity and flexibility"
+    if "mini_session" in objections:
+        return "fit and accessibility"
+    if "what makes" in msg or "difference" in msg:
+        return "confidence in your difference"
+    if emotional_state == "nervous yet excited":
+        return "confidence and care"
+    if emotional_state == "high interest":
+        return "beauty, trust, and momentum"
+
+    return "clarity and connection"
+
+def recommend_next_step(lu_stage: str, objections: list[str]) -> str:
+    if lu_stage == "ready_to_book":
+        return "Invite consultation and reserve date"
+    if "price" in objections:
+        return "Briefly explain the experience and invite a consult"
+    if "spouse" in objections:
+        return "Offer an overview they can share and keep the connection warm"
+    if "overwhelm" in objections:
+        return "Simplify the process and guide with one calm next step"
+    if "timing" in objections:
+        return "Offer future planning and remove urgency"
+    if lu_stage == "vision_building":
+        return "Reinforce your difference and invite a conversation"
+    if lu_stage == "discovery":
+        return "Ask one meaningful discovery question or invite a consult"
+
+    return "Invite a simple conversation"
+
+def estimate_booking_likelihood(message: str, emotional_state: str, objections: list[str], lu_stage: str) -> int:
+    score = 5
+    msg = message.lower()
+
+    if "love your work" in msg or "love the print" in msg or "love how they came out" in msg:
+        score += 2
+    if has_booking_intent(msg):
+        score += 3
+    if "my friend" in msg or "recommended" in msg or "friend recently did a session" in msg:
+        score += 1
+    if lu_stage == "ready_to_book":
+        score += 1
+    if emotional_state in ["high interest", "nervous yet excited"]:
+        score += 1
+
+    score -= len(objections)
+
+    return max(1, min(10, score))
+
+def choose_strategy(lu_stage: str, emotional_driver: str, recommended_next_step: str) -> str:
+    if lu_stage == "ready_to_book":
+        return "Move confidently into booking guidance"
+    if lu_stage == "objection":
+        return f"Address the concern with calm authority, support the client's need for {emotional_driver}, and {recommended_next_step.lower()}"
+    if lu_stage == "vision_building":
+        return "Differentiate the experience and deepen desire"
+    if lu_stage == "discovery":
+        return "Build connection and guide toward a meaningful next step"
+
+    return "Create clarity and invite the conversation forward"
+
+def calculate_confidence(message: str, lu_stage: str, objections: list[str], emotional_state: str) -> str:
+    msg = message.lower()
+    signal_count = 0
+
+    if has_booking_intent(msg):
+        signal_count += 2
+    if objections:
+        signal_count += 1
+    if emotional_state in ["high interest", "nervous yet excited", "overwhelmed"]:
+        signal_count += 1
+    if "my friend" in msg or "recommended" in msg:
+        signal_count += 1
+    if lu_stage in ["ready_to_book", "objection", "vision_building"]:
+        signal_count += 1
+
+    if signal_count >= 4:
+        return "High"
+    if signal_count >= 2:
+        return "Medium"
+    return "Low"
+
+def detect_lead_priority(message: str, booking_likelihood: int, lu_stage: str) -> str:
+    msg = message.lower()
+
+    if booking_likelihood >= 8 and ("my friend" in msg or "recommended" in msg or lu_stage == "ready_to_book"):
+        return "High-touch lead"
+    if booking_likelihood >= 7:
+        return "Strong lead"
+    if lu_stage == "objection":
+        return "Nurture lead"
+
+    return "Early-stage lead"
+
+def generate_response(message: str, emotional_state: str, objections: list[str], lu_stage: str, emotional_driver: str) -> str:
+    msg = message.lower()
+
+    if lu_stage == "ready_to_book":
+        return (
+            "That means so much—thank you. I’d love to create something beautiful for you.\n\n"
+            "The next step is simply a conversation so I can learn a little more about what you’re envisioning, walk you through the experience, and help you choose the session that feels like the best fit.\n\n"
+            "From there, I’ll guide you through reserving your date and planning everything in a way that feels easy, thoughtful, and fully taken care of."
+        )
+
+    if "spouse" in objections:
+        return (
+            "Of course—that makes complete sense. This is something meaningful, and I would want you both to feel completely confident moving forward.\n\n"
+            "I can send over a simple overview so you can share it, and then once you’ve had a chance to talk it through, we can reconnect.\n\n"
+            "From there, I’d be happy to guide you both through what the experience would look like and help you decide if it feels like the right fit for your family."
+        )
+
+    if "price" in objections:
+        return (
+            "I completely understand—and I’m really glad you reached out. Most people feel that way at first because this is a little different than a typical photo session.\n\n"
+            "What I create is a fully guided portrait experience, where everything is thoughtfully planned with you—from styling and wardrobe to how you’ll be photographed—so you don’t have to figure any of it out on your own.\n\n"
+            "Most clients don’t choose anything ahead of time. We design everything together in a way that feels natural and aligned with what you’re wanting.\n\n"
+            "The next step is simply a conversation so I can learn a little more about you and walk you through what this could look like for you. From there, I’ll guide you every step of the way."
+        )
+
+    if "overwhelm" in objections:
+        return (
+            "I completely understand that feeling—and honestly, many of my clients begin in that exact place.\n\n"
+            "That’s why I guide you through each part of the experience, from what to wear to how everything comes together, so it feels calm, easy, and beautifully taken care of.\n\n"
+            "You do not need to have everything figured out ahead of time. My role is to help shape it with you in a way that feels natural and enjoyable.\n\n"
+            "The next step is simply a conversation so I can learn what you’re hoping for and begin guiding you through it."
+        )
+
+    if "timing" in objections:
+        return (
+            "That makes complete sense—life can feel very full, especially in busy seasons.\n\n"
+            "The nice thing is that this can be planned in a really thoughtful way, so it feels intentional rather than rushed. Everything is designed to be guided and taken step by step.\n\n"
+            "When the timing feels right, I’d be happy to walk you through what the process would look like and help you choose a date that feels comfortable."
+        )
+
+    if "mini_session" in objections:
+        return (
+            "I do offer a few limited sessions at certain times of year, though most of what I create is a more custom, fully guided portrait experience.\n\n"
+            "That is where we’re able to create the more refined, timeless artwork you see throughout my work.\n\n"
+            "The next step would be for me to learn a little more about what you’re hoping for so I can guide you toward the option that feels like the best fit."
+        )
+
+    if lu_stage == "vision_building" or "what makes" in msg or "difference" in msg:
+        return (
+            "That’s a wonderful question—and honestly, it’s an important one.\n\n"
+            "What I do is a little different from a typical photo session. I guide you through the entire experience—from styling and preparation to posing and final artwork—so you don’t have to figure anything out on your own.\n\n"
+            "The goal isn’t simply to create beautiful photographs, but to create something lasting, intentional, and meaningful.\n\n"
+            "The next step is simply a conversation so I can learn what you’re envisioning and walk you through how the experience would be shaped around you."
+        )
+
+    if lu_stage == "discovery":
+        return (
+            "I’m so glad you reached out. It sounds like this is something that matters to you, and I’d love to learn a little more about what you’re envisioning.\n\n"
+            "The experience is designed to be thoughtful and fully guided, so you do not need to have every detail figured out before reaching out.\n\n"
+            "The next step is simply a conversation so I can get a sense of what you’re hoping to create and begin guiding you toward what would fit best."
+        )
+
+    if emotional_state == "high interest":
+        return (
+            "That means so much—thank you.\n\n"
+            "I’d love to learn more about what you’re envisioning and help you choose the session that would feel most aligned with what you want to create.\n\n"
+            "Everything is designed to feel easy, thoughtful, and fully guided from beginning to end.\n\n"
+            "The next step is simply a conversation so I can walk you through the experience and begin shaping it with you."
+        )
+
+    if emotional_state == "nervous yet excited":
+        return (
+            "I completely understand that feeling—and honestly, that’s such a natural place to begin.\n\n"
+            "Most clients come in not knowing exactly how everything will come together yet, and that is completely okay. The experience is designed to be guided, thoughtful, and very personal.\n\n"
+            "My role is to help you feel comfortable, cared for, and confident as we plan something beautiful together.\n\n"
+            "The next step is simply a conversation so I can learn more about what you’re envisioning and begin guiding you through the process."
+        )
+
+    return (
+        "I’m so glad you reached out. A lot of my clients begin exactly here—wanting to understand what the experience feels like before making any decisions.\n\n"
+        "I’d love to learn more about what you’re envisioning and walk you through how everything works, so you have a clear sense of what this could look like for you.\n\n"
+        "From there, I can guide you through the next steps in a way that feels thoughtful, easy, and fully tailored to what you’re wanting."
+    )
+
+def suggest_discovery_question(lu_stage: str, emotional_driver: str, objections: list[str]) -> str:
+    if lu_stage == "discovery":
+        return "What is it about this season or this moment that makes you want to capture it now?"
+    if lu_stage == "vision_building":
+        return "What was it about my work that felt most meaningful or most like what you’re wanting?"
+    if "price" in objections:
+        return "Would it help if I walked you through how the experience works so you could get a clearer sense of what feels right for you?"
+    if "overwhelm" in objections:
+        return "Would it be helpful if I walked you through the process step by step so it feels simpler?"
+    if "spouse" in objections:
+        return "Would it help if I sent over a simple overview you could share so you both have a clear sense of how it works?"
+    if lu_stage == "ready_to_book":
+        return "Would you like me to walk you through the next step and what the booking process looks like?"
+
+    return "Can you tell me a little about who this is for and what you’re hoping to create?"
+
+def generate_follow_up(lu_stage: str, objections: list[str]) -> str:
+    if lu_stage == "ready_to_book":
+        return (
+            "Hi! I just wanted to follow up with you in case you’d like to move forward. "
+            "I’d be happy to walk you through the next step and help you find a date that feels right."
+        )
+    if "spouse" in objections:
+        return (
+            "Hi! I just wanted to check in and see if you had a chance to talk it through together. "
+            "If it would be helpful, I’m happy to walk you through the experience or answer any questions."
+        )
+    if "price" in objections:
+        return (
+            "Hi! I just wanted to check in. If it would be helpful, I’d be happy to walk you through how the experience works so you can get a clearer sense of what would feel right for you."
+        )
+    if "overwhelm" in objections:
+        return (
+            "Hi! I just wanted to check in. If it would help, I can walk you through everything step by step so it feels simple and easy."
+        )
+
+    return (
+        "Hi! I just wanted to check back in and see if you had any questions. "
+        "I’d be happy to walk you through the experience whenever you’re ready."
+    )
+
+def generate_best_next_move(mode: str, analysis: dict) -> dict:
+    lu_stage = analysis["lu_stage"]
+    objections = analysis["objections_detected"]
+
+    if mode == "Inquiry Reply":
+        return {
+            "direction": "Create warmth and gently move the conversation forward",
+            "ask_next": analysis["suggested_discovery_question"],
+            "listen_for": "What matters most emotionally and whether they need reassurance, clarity, or guidance",
+            "value_bridge": "This is a guided, thoughtful experience—not something they need to figure out on their own",
+            "avoid": "Leading with too much pricing or too many logistics too early",
+        }
+
+    if mode == "Discovery Call":
+        return {
+            "direction": "Deepen the emotional why behind the inquiry",
+            "ask_next": analysis["suggested_discovery_question"],
+            "listen_for": "Regret, time passing, desire for meaning, desire to feel seen, and what they are truly hoping to preserve",
+            "value_bridge": "That is exactly why the experience is designed to be more than a quick session—it becomes something lasting and meaningful",
+            "avoid": "Jumping to packages before the emotional why is fully understood",
+        }
+
+    if mode == "Consult / Sales Call":
+        return {
+            "direction": "Position the experience and transition toward value",
+            "ask_next": "Where do you imagine enjoying these portraits once they are finished?",
+            "listen_for": "Wall art language, legacy language, emotional investment, and decision-maker signals",
+            "value_bridge": "Everything is designed to become artwork you live with and return to—not just images that disappear into a phone",
+            "avoid": "Over-explaining options before anchoring the value of the experience",
+        }
+
+    if mode == "Objection Handling":
+        return {
+            "direction": "Slow the moment down and resolve the real concern with calm authority",
+            "ask_next": "What would help you feel most confident moving forward?",
+            "listen_for": "Whether the stated objection is the true objection or a softer stand-in for something deeper",
+            "value_bridge": "The goal is not to pressure a decision—it is to help them get clear about what feels aligned",
+            "avoid": "Discounting, defensiveness, or sounding like you are trying to convince them",
+        }
+
+    if mode == "Closing":
+        return {
+            "direction": "Guide toward a decision and make the next step feel simple",
+            "ask_next": "Would you like me to walk you through the next step and help you reserve a date?",
+            "listen_for": "Readiness signals, scheduling interest, spouse alignment, and lingering hesitation",
+            "value_bridge": "You can always refine details, but securing the next step lets you hold space for what you’re wanting to create",
+            "avoid": "Passive wording that loses momentum",
+        }
+
+    if mode == "Follow-Up":
+        return {
+            "direction": "Reopen the conversation warmly and clearly",
+            "ask_next": "Would it help if I walked you through any part of the experience again?",
+            "listen_for": "Silence caused by overwhelm, timing, spouse, or uncertainty",
+            "value_bridge": "Following up is about restoring clarity and confidence, not applying pressure",
+            "avoid": "Following up with language that feels generic or disconnected from their earlier concern",
+        }
+
+    return {
+        "direction": analysis["recommended_next_step"],
+        "ask_next": analysis["suggested_discovery_question"],
+        "listen_for": "Their emotional driver and what matters most beneath the surface",
+        "value_bridge": "Guide them toward clarity, confidence, and a sense of being taken care of",
+        "avoid": "Generic language that does not reflect what they are actually feeling",
     }
-  };
 
-  const loadScenario = (scenarioName) => {
-    const found = scenarioCases.find((item) => item.name === scenarioName);
-    if (!found) return;
-    setSelectedScenario(scenarioName);
-    applySelection(found.stage, found.trigger);
-    setClientInput(found.clientMessage);
-    setConversationLog([
-      { speaker: "client", text: found.clientMessage },
-      { speaker: "assistant", text: getResponse(found.stage, found.trigger) },
-    ]);
-  };
+def analyze_client_inquiry(message: str, mode: str) -> dict:
+    emotional_state = detect_emotional_state(message)
+    objections = detect_objections(message)
+    lu_stage = detect_lu_stage(message, objections)
+    emotional_driver = detect_emotional_driver(message, emotional_state, objections)
+    recommended_next_step = recommend_next_step(lu_stage, objections)
+    booking_likelihood = estimate_booking_likelihood(message, emotional_state, objections, lu_stage)
+    strategy = choose_strategy(lu_stage, emotional_driver, recommended_next_step)
+    response_message = generate_response(message, emotional_state, objections, lu_stage, emotional_driver)
+    discovery_question = suggest_discovery_question(lu_stage, emotional_driver, objections)
+    follow_up_message = generate_follow_up(lu_stage, objections)
+    confidence = calculate_confidence(message, lu_stage, objections, emotional_state)
+    lead_priority = detect_lead_priority(message, booking_likelihood, lu_stage)
 
-  const addToConversation = () => {
-    if (!clientInput.trim()) return;
-    setConversationLog((prev) => [
-      ...prev,
-      { speaker: "client", text: clientInput.trim() },
-      { speaker: "assistant", text: generatedResponse.trim() },
-    ]);
-  };
+    base_analysis = {
+        "booking_likelihood": booking_likelihood,
+        "emotional_state": emotional_state,
+        "objections_detected": objections,
+        "lu_stage": lu_stage,
+        "emotional_driver": emotional_driver,
+        "recommended_next_step": recommended_next_step,
+        "strategy": strategy,
+        "suggested_discovery_question": discovery_question,
+        "follow_up_message": follow_up_message,
+        "confidence": confidence,
+        "lead_priority": lead_priority,
+        "response_message": response_message,
+    }
 
-  const resetConversation = () => {
-    setConversationLog([]);
-  };
+    best_next_move = generate_best_next_move(mode, base_analysis)
+    base_analysis["best_next_move"] = best_next_move
+    return base_analysis
 
-  return (
-    <div className="min-h-screen bg-stone-950 text-stone-100">
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:px-10">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <Badge className="rounded-full border border-amber-200/20 bg-amber-100/10 px-4 py-1 text-amber-100">
-              Texas Vogue AI Concierge
-            </Badge>
-            <Badge variant="outline" className="rounded-full border-stone-700 text-stone-300">
-              Luxury LU Conversion Engine
-            </Badge>
-          </div>
-          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">LU Response Studio</h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-stone-300 md:text-lg">
-            A stage-aware, trigger-based backend tool for emotionally intelligent client replies, objection handling,
-            and luxury sales guidance across text and discovery calls.
-          </p>
-        </motion.div>
+# -----------------------------
+# UI
+# -----------------------------
+st.markdown('<div class="luxury-card">', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Texas Vogue Internal Tool</div>', unsafe_allow_html=True)
+st.markdown('<div class="big-title">TVP AI Concierge</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-copy">Luxury client inquiry assistant with LU sales structure</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-6">
-            <Card className="rounded-3xl border-stone-800 bg-stone-900/80 shadow-2xl shadow-black/20">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-4">
-                  <CardTitle className="flex items-center gap-2 text-2xl">
-                    <Brain className="h-5 w-5 text-amber-200" />
-                    Response Generator
-                  </CardTitle>
-                  <div className="flex items-center gap-2 rounded-full border border-stone-800 bg-stone-950 p-1">
-                    <Button
-                      variant={mode === "text" ? "default" : "ghost"}
-                      className="rounded-full"
-                      onClick={() => setMode("text")}
-                    >
-                      <MessageSquare className="mr-2 h-4 w-4" /> Text
-                    </Button>
-                    <Button
-                      variant={mode === "call" ? "default" : "ghost"}
-                      className="rounded-full"
-                      onClick={() => setMode("call")}
-                    >
-                      <Phone className="mr-2 h-4 w-4" /> Call
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm text-stone-400">Stage</label>
-                    <Select value={stage} onValueChange={handleStageChange}>
-                      <SelectTrigger className="h-12 rounded-2xl border-stone-800 bg-stone-950">
-                        <SelectValue placeholder="Choose stage" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {stageOrder.map((item) => (
-                          <SelectItem key={item} value={item}>
-                            {responseLibrary[item].label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+with st.sidebar:
+    st.subheader("Built-In Testing Panel")
 
-                  <div className="space-y-2">
-                    <label className="text-sm text-stone-400">Trigger</label>
-                    <Select value={trigger} onValueChange={handleTriggerChange}>
-                      <SelectTrigger className="h-12 rounded-2xl border-stone-800 bg-stone-950">
-                        <SelectValue placeholder="Choose trigger" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {triggerOptions.map((item) => (
-                          <SelectItem key={item.key} value={item.key}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+    st.selectbox(
+        "Scenario group",
+        list(TEST_SCENARIOS.keys()),
+        key="selected_test_category"
+    )
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Card className="rounded-2xl border-stone-800 bg-stone-950/90">
-                    <CardContent className="p-4">
-                      <p className="mb-2 text-xs uppercase tracking-[0.22em] text-stone-500">Stage Objective</p>
-                      <p className="text-sm leading-6 text-stone-200">{selectedStageMeta.objective}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-stone-800 bg-stone-950/90">
-                    <CardContent className="p-4">
-                      <p className="mb-2 text-xs uppercase tracking-[0.22em] text-stone-500">Call Coach</p>
-                      <p className="text-sm leading-6 text-stone-200">{callCoach[stage]}</p>
-                    </CardContent>
-                  </Card>
-                </div>
+    scenario_list = TEST_SCENARIOS[st.session_state.selected_test_category]
 
-                <div className="space-y-2">
-                  <label className="text-sm text-stone-400">Client Message / Cue</label>
-                  <Textarea
-                    value={clientInput}
-                    onChange={(e) => setClientInput(e.target.value)}
-                    className="min-h-[120px] rounded-2xl border-stone-800 bg-stone-950 text-stone-100"
-                  />
-                </div>
+    default_index = 0
+    if st.session_state.selected_sample in scenario_list:
+        default_index = scenario_list.index(st.session_state.selected_sample)
 
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={handleGenerate} className="rounded-full px-5">
-                    <Sparkles className="mr-2 h-4 w-4" /> Generate Response
-                  </Button>
-                  <Button variant="outline" onClick={handleCopy} className="rounded-full border-stone-700 bg-transparent">
-                    <Copy className="mr-2 h-4 w-4" /> {copied ? "Copied" : "Copy"}
-                  </Button>
-                  <Button variant="outline" onClick={addToConversation} className="rounded-full border-stone-700 bg-transparent">
-                    <ChevronRight className="mr-2 h-4 w-4" /> Add to Test Panel
-                  </Button>
-                </div>
+    st.selectbox(
+        "Choose a sample",
+        scenario_list,
+        index=default_index,
+        key="selected_sample"
+    )
 
-                <div className="rounded-3xl border border-amber-200/15 bg-gradient-to-br from-stone-950 to-stone-900 p-5">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-amber-100/60">Generated Response</p>
-                      <p className="mt-1 text-sm text-stone-400">{selectedTriggerMeta.label}</p>
-                    </div>
-                    <Badge className="rounded-full bg-amber-100/10 text-amber-100">{mode === "call" ? "Call-ready" : "Text-ready"}</Badge>
-                  </div>
-                  <p className="whitespace-pre-wrap text-[15px] leading-7 text-stone-100">{generatedResponse}</p>
-                </div>
-              </CardContent>
-            </Card>
+    sb1, sb2 = st.columns(2)
+    sb1.button("Load selected", use_container_width=True, on_click=load_selected_sample)
+    sb2.button("Randomize", use_container_width=True, on_click=load_random_sample)
 
-            <Tabs defaultValue="simulator" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-stone-900">
-                <TabsTrigger value="simulator" className="rounded-2xl">Testing Panel</TabsTrigger>
-                <TabsTrigger value="library" className="rounded-2xl">Full Library</TabsTrigger>
-              </TabsList>
+st.markdown('<div class="section-label">Conversation Mode</div>', unsafe_allow_html=True)
+st.selectbox(
+    "Conversation Mode",
+    [
+        "Inquiry Reply",
+        "Discovery Call",
+        "Consult / Sales Call",
+        "Objection Handling",
+        "Closing",
+        "Follow-Up",
+    ],
+    key="mode",
+    label_visibility="collapsed",
+)
 
-              <TabsContent value="simulator" className="mt-4">
-                <Card className="rounded-3xl border-stone-800 bg-stone-900/80">
-                  <CardHeader>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <CardTitle className="text-2xl">Scenario Simulator</CardTitle>
-                      <div className="flex gap-2">
-                        <Select value={selectedScenario} onValueChange={loadScenario}>
-                          <SelectTrigger className="w-[280px] rounded-2xl border-stone-800 bg-stone-950">
-                            <SelectValue placeholder="Load scenario" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {scenarioCases.map((scenario) => (
-                              <SelectItem key={scenario.name} value={scenario.name}>
-                                {scenario.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button variant="outline" onClick={resetConversation} className="rounded-full border-stone-700 bg-transparent">
-                          <RefreshCcw className="mr-2 h-4 w-4" /> Clear
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[360px] rounded-2xl border border-stone-800 bg-stone-950 p-4">
-                      <div className="space-y-4">
-                        {conversationLog.length === 0 ? (
-                          <p className="text-sm text-stone-500">No messages yet. Load a scenario or add your current exchange.</p>
-                        ) : (
-                          conversationLog.map((entry, index) => (
-                            <div
-                              key={`${entry.speaker}-${index}`}
-                              className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm leading-6 ${
-                                entry.speaker === "client"
-                                  ? "mr-auto border border-stone-800 bg-stone-900 text-stone-200"
-                                  : "ml-auto bg-amber-100/10 text-amber-50"
-                              }`}
-                            >
-                              <p className="mb-1 text-[11px] uppercase tracking-[0.22em] opacity-70">
-                                {entry.speaker === "client" ? "Client" : "Texas Vogue"}
-                              </p>
-                              <p>{entry.text}</p>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+st.markdown('<div class="section-label">Client Message</div>', unsafe_allow_html=True)
+st.text_area(
+    "Paste client inquiry",
+    key="input_text",
+    height=150,
+    label_visibility="collapsed",
+    placeholder="Paste a DM or inquiry here..."
+)
 
-              <TabsContent value="library" className="mt-4">
-                <Card className="rounded-3xl border-stone-800 bg-stone-900/80">
-                  <CardHeader>
-                    <CardTitle className="text-2xl">Complete Response Library</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Accordion type="single" collapsible className="w-full">
-                      {stageOrder.map((stageKey) => (
-                        <AccordionItem key={stageKey} value={stageKey} className="border-stone-800">
-                          <AccordionTrigger className="text-left text-base text-stone-100">
-                            <div>
-                              <div className="font-medium">{responseLibrary[stageKey].label}</div>
-                              <div className="mt-1 text-sm font-normal text-stone-400">
-                                {responseLibrary[stageKey].objective}
-                              </div>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-4">
-                              {Object.entries(responseLibrary[stageKey].triggers).map(([triggerKey, item]) => (
-                                <Card key={triggerKey} className="rounded-2xl border-stone-800 bg-stone-950/90">
-                                  <CardContent className="p-4">
-                                    <div className="mb-2 flex items-center justify-between gap-2">
-                                      <h3 className="font-medium text-stone-100">{item.label}</h3>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="rounded-full border-stone-700 bg-transparent"
-                                        onClick={() => applySelection(stageKey, triggerKey)}
-                                      >
-                                        Load
-                                      </Button>
-                                    </div>
-                                    <p className="mb-3 text-sm text-stone-400">
-                                      <span className="text-stone-500">Client cue:</span> {item.clientCue}
-                                    </p>
-                                    <p className="text-sm leading-7 text-stone-200">{item.response}</p>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+col1, col2 = st.columns(2)
+generate = col1.button("Generate reply", use_container_width=True)
+col2.button("Clear", use_container_width=True, on_click=clear_all)
 
-          <div className="space-y-6">
-            <Card className="rounded-3xl border-stone-800 bg-stone-900/80">
-              <CardHeader>
-                <CardTitle className="text-2xl">Luxury Sales Rules</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm leading-7 text-stone-300">
-                <p>1. Do not repeat discovery language once the client moves into objection.</p>
-                <p>2. When fear appears, address the fear directly before asking another question.</p>
-                <p>3. Use pattern interruption: explain how most photographers handle it, then contrast your process.</p>
-                <p>4. Move from photos to finished artwork, meaning, and daily life impact.</p>
-                <p>5. When buying signals appear, lead clearly. Do not get vague.</p>
-              </CardContent>
-            </Card>
+if generate:
+    if not st.session_state.input_text.strip():
+        st.warning("Please enter a message.")
+        st.session_state.analysis = None
+    else:
+        st.session_state.analysis = analyze_client_inquiry(
+            st.session_state.input_text,
+            st.session_state.mode
+        )
 
-            <Card className="rounded-3xl border-stone-800 bg-gradient-to-br from-amber-100/10 to-stone-900">
-              <CardHeader>
-                <CardTitle className="text-2xl">Strong Response Formula</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm leading-7 text-stone-200">
-                <p><span className="text-amber-100">Acknowledge:</span> show the client you heard the real concern.</p>
-                <p><span className="text-amber-100">Interrupt:</span> call out the broken industry pattern.</p>
-                <p><span className="text-amber-100">Differentiate:</span> explain what Texas Vogue does differently.</p>
-                <p><span className="text-amber-100">Visualize:</span> show the outcome in her home and life.</p>
-                <p><span className="text-amber-100">Lead:</span> offer the next clear step.</p>
-              </CardContent>
-            </Card>
+if st.session_state.analysis is not None:
+    analysis = st.session_state.analysis
+    best_next_move = analysis["best_next_move"]
 
-            <Card className="rounded-3xl border-stone-800 bg-stone-900/80">
-              <CardHeader>
-                <CardTitle className="text-2xl">Phone Call Notes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm leading-7 text-stone-300">
-                <p>Use shorter sentences.</p>
-                <p>Pause after emotional lines.</p>
-                <p>Ask one question at a time.</p>
-                <p>On calls, confidence matters more than polish.</p>
-                <p>When she hesitates, do not back away—clarify and lead.</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+    st.markdown('<div class="subtle-divider"></div>', unsafe_allow_html=True)
+    st.markdown("## Client Insight")
+
+    metric1, metric2, metric3, metric4 = st.columns(4)
+    metric1.metric("Booking Score", f"{analysis['booking_likelihood']}/10")
+    metric2.metric("Emotion", analysis["emotional_state"])
+    metric3.metric(
+        "Objections",
+        ", ".join(analysis["objections_detected"]) if analysis["objections_detected"] else "None"
+    )
+    metric4.metric("LU Stage", analysis["lu_stage"].replace("_", " ").title())
+
+    metric5, metric6 = st.columns(2)
+    metric5.metric("Confidence", analysis["confidence"])
+    metric6.metric("Lead Priority", analysis["lead_priority"])
+
+    st.markdown('<div class="luxury-card">', unsafe_allow_html=True)
+    st.markdown("**Emotional Driver**")
+    st.write(analysis["emotional_driver"])
+    st.markdown("**Recommended Next Step**")
+    st.write(analysis["recommended_next_step"])
+    st.markdown("**Suggested Discovery Question**")
+    st.write(analysis["suggested_discovery_question"])
+    st.markdown("**Suggested Follow-Up**")
+    st.write(analysis["follow_up_message"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("## Best Next Move")
+    st.markdown('<div class="luxury-card">', unsafe_allow_html=True)
+    st.markdown("**Direction**")
+    st.write(best_next_move["direction"])
+    st.markdown("**Ask Next**")
+    st.write(best_next_move["ask_next"])
+    st.markdown("**Listen For**")
+    st.write(best_next_move["listen_for"])
+    st.markdown("**Value Bridge**")
+    st.write(best_next_move["value_bridge"])
+    st.markdown("**Avoid**")
+    st.write(best_next_move["avoid"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    with st.expander("Concierge Notes"):
+        st.write(analysis["strategy"])
+
+    st.markdown("## Suggested Reply")
+    response_text = analysis["response_message"]
+
+    st.text_area(
+        "Suggested reply text",
+        value=response_text,
+        height=260,
+        key="response_output",
+        label_visibility="collapsed",
+    )
+
+    safe_text = json.dumps(response_text)
+
+    copy_button_html = f"""
+    <button style="
+        background-color:#111111;
+        color:#ffffff;
+        padding:12px 18px;
+        border:none;
+        border-radius:10px;
+        font-size:15px;
+        cursor:pointer;
+        font-family:inherit;
+    " onclick='navigator.clipboard.writeText({safe_text})'>
+        Copy Reply
+    </button>
+    """
+
+    components.html(copy_button_html, height=55)
+
+    st.download_button(
+        "Download reply",
+        data=response_text,
+        file_name="tvp_reply.txt",
+        use_container_width=False,
+  )
