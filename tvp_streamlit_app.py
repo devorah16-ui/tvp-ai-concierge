@@ -229,33 +229,31 @@ if generate:
             st.code(json.dumps(analysis, indent=2, ensure_ascii=False), language="json")
 
         import streamlit.components.v1 as components
-import json
-
-st.subheader("Client response")
-
-response_text = analysis["response_message"]
-
-st.text_area(
-    "Response (editable)",
-    value=response_text,
-    height=260,
-)
-
-# Safe copy (handles quotes properly)
-safe_text = json.dumps(response_text)
-
-copy_button_html = f"""
-<button style="
-    background-color:#000;
-    color:#fff;
-    padding:10px 16px;
-    border:none;
-    border-radius:6px;
-    font-size:14px;
-" onclick='navigator.clipboard.writeText({safe_text})'>
-    📋 Copy Response
-</button>
-"""
+        import json
+        
+        st.subheader("Client response")
+        
+        response_text = analysis["response_message"]
+        st.text_area(
+            "Response (editable)",
+            value=response_text,
+            height=260,
+        )
+        # Safe copy (handles quotes properly)
+        safe_text = json.dumps(response_text)
+        
+        copy_button_html = f"""
+        <button style="
+        background-color:#000;
+        color:#fff;
+        padding:10px 16px;
+        border:none;
+        border-radius:6px;
+        font-size:14px;
+        " onclick='navigator.clipboard.writeText({safe_text})'>
+        📋 Copy Response
+        </button>
+        """
 
 components.html(copy_button_html, height=60)
 
