@@ -54,6 +54,7 @@ BOOKING_INTENT_PHRASES = [
     "want to book",
     "ready to book",
     "how do i book",
+    "how do i get booked",
     "how do i go about that",
     "what are the next steps",
     "how can i book",
@@ -61,6 +62,9 @@ BOOKING_INTENT_PHRASES = [
     "schedule a session",
     "reserve a session",
     "how do i get started",
+    "get booked",
+    "get this booked",
+    "book with you",
 ]
 
 PRICE_PATTERNS = [
@@ -86,12 +90,25 @@ MINI_PATTERNS = [
 
 
 # -----------------------------
+# HELPER FUNCTIONS
+# -----------------------------
+def has_booking_intent(msg: str) -> bool:
+    booking_words = ["book", "booked", "booking", "reserve", "schedule"]
+    intent_words = ["how do i", "how can i", "want to", "ready to", "love to", "next steps", "get started"]
+
+    return (
+        any(phrase in msg for phrase in BOOKING_INTENT_PHRASES)
+        or (any(b in msg for b in booking_words) and any(i in msg for i in intent_words))
+    )
+
+
+# -----------------------------
 # DETECTION FUNCTIONS
 # -----------------------------
-def detect_emotional_state(message):
+def detect_emotional_state(message: str) -> str:
     msg = message.lower()
 
-    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+    if has_booking_intent(msg):
         return "high interest"
 
     if any(word in msg for word in ["nervous", "scared", "unsure", "afraid", "worried"]):
@@ -111,7 +128,7 @@ def detect_emotional_state(message):
     return "curious but undecided"
 
 
-def detect_objections(message):
+def detect_objections(message: str) -> list[str]:
     msg = message.lower()
     objections = []
 
@@ -133,10 +150,10 @@ def detect_objections(message):
     return objections
 
 
-def detect_lu_stage(message, objections):
+def detect_lu_stage(message: str, objections: list[str]) -> str:
     msg = message.lower()
 
-    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+    if has_booking_intent(msg):
         return "ready_to_book"
 
     if objections:
@@ -160,10 +177,10 @@ def detect_lu_stage(message, objections):
     return "inquiry"
 
 
-def detect_emotional_driver(message, emotional_state, objections):
+def detect_emotional_driver(message: str, emotional_state: str, objections: list[str]) -> str:
     msg = message.lower()
 
-    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+    if has_booking_intent(msg):
         return "readiness and trust"
 
     if "price" in objections:
@@ -193,7 +210,7 @@ def detect_emotional_driver(message, emotional_state, objections):
     return "clarity and connection"
 
 
-def recommend_next_step(lu_stage, objections):
+def recommend_next_step(lu_stage: str, objections: list[str]) -> str:
     if lu_stage == "ready_to_book":
         return "Invite consultation and reserve date"
 
@@ -218,15 +235,23 @@ def recommend_next_step(lu_stage, objections):
     return "Invite a simple conversation"
 
 
-def estimate_booking_likelihood(message, emotional_state, objections, lu_stage):
+def estimate_booking_likelihood(
+    message: str,
+    emotional_state: str,
+    objections: list[str],
+    lu_stage: str
+) -> int:
     score = 5
     msg = message.lower()
 
-    if "love your work" in msg:
+    if "love your work" in msg or "love the print" in msg or "love how they came out" in msg:
         score += 2
 
-    if any(phrase in msg for phrase in BOOKING_INTENT_PHRASES):
+    if has_booking_intent(msg):
         score += 3
+
+    if "my friend" in msg or "recommended" in msg or "friend recently did a session" in msg:
+        score += 1
 
     if lu_stage == "ready_to_book":
         score += 1
@@ -239,7 +264,7 @@ def estimate_booking_likelihood(message, emotional_state, objections, lu_stage):
     return max(1, min(10, score))
 
 
-def choose_strategy(lu_stage, emotional_driver, recommended_next_step):
+def choose_strategy(lu_stage: str, emotional_driver: str, recommended_next_step: str) -> str:
     if lu_stage == "ready_to_book":
         return "Move confidently into booking guidance"
 
@@ -255,13 +280,22 @@ def choose_strategy(lu_stage, emotional_driver, recommended_next_step):
     return "Create clarity and invite the conversation forward"
 
 
-def generate_response(message, emotional_state, objections, lu_stage, emotional_driver):
+# -----------------------------
+# RESPONSE GENERATION
+# -----------------------------
+def generate_response(
+    message: str,
+    emotional_state: str,
+    objections: list[str],
+    lu_stage: str,
+    emotional_driver: str
+) -> str:
     msg = message.lower()
 
     if lu_stage == "ready_to_book":
         return (
             "That means so much—thank you. I’d love to create something beautiful for you.\n\n"
-            "The next step is simply a conversation so I can learn more about what you’re envisioning, "
+            "The next step is simply a conversation so I can learn a little more about what you’re envisioning, "
             "walk you through the experience, and help you choose the session that feels like the best fit.\n\n"
             "From there, I’ll guide you through reserving your date and planning everything in a way that feels easy, thoughtful, and fully taken care of."
         )
@@ -341,7 +375,7 @@ def generate_response(message, emotional_state, objections, lu_stage, emotional_
     )
 
 
-def suggest_discovery_question(lu_stage, emotional_driver, objections):
+def suggest_discovery_question(lu_stage: str, emotional_driver: str, objections: list[str]) -> str:
     if lu_stage == "discovery":
         return "What is it about this season or this moment that makes you want to capture it now?"
 
@@ -357,10 +391,13 @@ def suggest_discovery_question(lu_stage, emotional_driver, objections):
     if "spouse" in objections:
         return "Would it help if I sent over a simple overview you could share so you both have a clear sense of how it works?"
 
+    if lu_stage == "ready_to_book":
+        return "Would you like me to walk you through the next step and what the booking process looks like?"
+
     return "Can you tell me a little about who this is for and what you’re hoping to create?"
 
 
-def analyze_client_inquiry(message):
+def analyze_client_inquiry(message: str) -> dict:
     emotional_state = detect_emotional_state(message)
     objections = detect_objections(message)
     lu_stage = detect_lu_stage(message, objections)
@@ -418,6 +455,7 @@ with st.sidebar:
     st.subheader("Sample inquiries")
     samples = {
         "Ready to book": "One of my friends did images with you and I love how they came out. I would love to book a session. How do I go about that?",
+        "Get booked": "My friend recently did a session with you and I love the print she has in her home. How do I get booked?",
         "Budget concern": "Your work is beautiful but I’m worried it might be out of my budget.",
         "Spouse objection": "I love this so much but I would need to talk to my husband first before making a decision.",
         "Overwhelmed mom": "This looks beautiful but I’m honestly overwhelmed just thinking about outfits, my kids behaving, and whether I could pull something like this off.",
@@ -514,4 +552,4 @@ if st.session_state.analysis is not None:
         data=response_text,
         file_name="tvp_reply.txt",
         use_container_width=False,
-    )
+          )
