@@ -8,7 +8,6 @@ st.set_page_config(page_title="TVP AI Concierge", page_icon="✨", layout="cente
 # -----------------------------
 # LOGIC FUNCTIONS
 # -----------------------------
-
 def detect_emotional_state(message):
     msg = message.lower()
 
@@ -130,59 +129,61 @@ def analyze_client_inquiry(message):
         "emotional_state": emotional_state,
         "objections_detected": objections,
         "strategy": strategy,
-        "response_message": response_message
+        "response_message": response_message,
     }
 
 
 # -----------------------------
 # SESSION STATE
 # -----------------------------
-
-if "client_message" not in st.session_state:
-    st.session_state.client_message = ""
+if "input_text" not in st.session_state:
+    st.session_state.input_text = ""
 
 if "analysis" not in st.session_state:
     st.session_state.analysis = None
 
 
 # -----------------------------
+# CALLBACKS
+# -----------------------------
+def clear_all():
+    st.session_state.input_text = ""
+    st.session_state.analysis = None
+
+
+# -----------------------------
 # UI
 # -----------------------------
-
 st.title("TVP AI Concierge")
 st.caption("Luxury client inquiry assistant")
 
 client_message = st.text_area(
     "Paste client inquiry",
-    key="client_message",
-    height=150
+    value=st.session_state.input_text,
+    height=150,
 )
 
 col1, col2 = st.columns(2)
 generate = col1.button("Generate response", use_container_width=True)
-clear = col2.button("Clear", use_container_width=True)
+col2.button("Clear", use_container_width=True, on_click=clear_all)
 
 
 # -----------------------------
 # BUTTON ACTIONS
 # -----------------------------
-
-if clear:
-    st.session_state.client_message = ""
-    st.session_state.analysis = None
-    st.rerun()
-
 if generate:
-    if not st.session_state.client_message.strip():
-        st.warning("Please enter a message")
+    st.session_state.input_text = client_message
+
+    if not client_message.strip():
+        st.warning("Please enter a message.")
+        st.session_state.analysis = None
     else:
-        st.session_state.analysis = analyze_client_inquiry(st.session_state.client_message)
+        st.session_state.analysis = analyze_client_inquiry(client_message)
 
 
 # -----------------------------
 # DISPLAY RESULTS
 # -----------------------------
-
 if st.session_state.analysis is not None:
     analysis = st.session_state.analysis
 
@@ -199,7 +200,7 @@ if st.session_state.analysis is not None:
         "Response (editable)",
         value=response_text,
         height=260,
-        key="response_output"
+        key="response_output",
     )
 
     safe_text = json.dumps(response_text)
@@ -226,5 +227,5 @@ if st.session_state.analysis is not None:
         "Download response",
         data=response_text,
         file_name="response.txt",
-        use_container_width=True
+        use_container_width=True,
     )
